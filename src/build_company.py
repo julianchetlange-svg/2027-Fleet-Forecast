@@ -73,7 +73,7 @@ lease = dict(zip(ls['Asset Name'], pd.to_numeric(ls['Asset Lease Fixed Rate'], e
 lease_note = {}
 for k, v in lease.items():
     if pd.isna(v):
-        if k in lease_fill: lease[k] = lease_fill[k]; lease_note[k] = 'Rate provided'
+        if k in lease_fill: lease[k] = lease_fill[k]
         else: lease[k] = 447.11; lease_note[k] = 'Rate missing; 2020 Toyota batch rate $447.11 used'
 lease['747104'] = 250.0; lease_note['747104'] = 'Holding rental $250/mo'
 lease['747106'] = 150.0; lease_note['747106'] = 'Holding rental $150/mo'
