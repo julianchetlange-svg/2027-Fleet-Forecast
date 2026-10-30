@@ -241,7 +241,7 @@ tr.lrow.sub td:first-child{padding-left:44px}
   <div class="kpis" id="kpis"></div>
   <div class="panel">
     <div class="callout">
-      <div class="ch"><span class="eyebrow">Location charges</span><p><b>What each location is charged under the cost rules.</b> Stores carry fuel, the fixed flat rate and $0.425 per truck mile. Distribution, Millwork, Headquarters, 355CD, 355 Reload and the regional loaner pools carry actual cost: fuel, maintenance, depreciation, lease, registration, taxes, Geotab and Lytx. <b>450 Millwork and Distribution 353, 356, 359 and 489 are on straight P&amp;L</b>, so they show the same actual cost in both views.</p></div>
+      <div class="ch"><span class="eyebrow">Location charges</span><p><b>What each location is charged under the cost rules.</b> Stores and the regional loaner pools (761–768) carry fuel, the fixed flat rate and $0.425 per truck mile. Distribution, Millwork, Headquarters, 355CD and 355 Reload carry actual cost: fuel, maintenance, depreciation, lease, registration, taxes, Geotab and Lytx. <b>450 Millwork and Distribution 353, 356, 359 and 489 are on straight P&amp;L</b>, so they show the same actual cost in both views.</p></div>
       <div class="op"><span class="eyebrow">Actual cost</span><p><b>What McCoy's actually spends.</b> Fuel, maintenance, depreciation, lease, registration, taxes and telematics for every asset, wherever it sits. Flat rates and mileage charges are internal and left out, so only a real change in miles, fuel or fleet size moves this number.</p></div>
     </div>
   </div>
@@ -352,8 +352,8 @@ tr.lrow.sub td:first-child{padding-left:44px}
   <div class="panel">
     <div class="phead"><h2>Method</h2></div>
     <ul class="rules" id="methodList">
-      <li><b>Scope.</b> <span id="mScope"></span> Every active asset on the asset roster except 950 Rio Truss. The roster sets location and in-service date. 033 Pharr, 355CD and 355 Pharr Reload sit in Region 05; regional loaner pools (761–767) sit in their regions.</li>
-      <li><b>Cost rules.</b> Stores (Regions 01–08): fuel + flat rate, plus $0.425 per mile for trucks. Actual cost (Distribution 353/356/359/489, Millwork 450, Headquarters 730/735/900, 355CD, 355 Reload and loaner pools): fuel + maintenance + depreciation + lease + registration, taxes, Geotab and Lytx.</li>
+      <li><b>Scope.</b> <span id="mScope"></span> Every active asset on the asset roster except 950 Rio Truss. The roster sets location and in-service date. 033 Pharr, 355CD and 355 Pharr Reload sit in Region 05; regional loaner pools (761–768) sit in their regions.</li>
+      <li><b>Cost rules.</b> Stores (Regions 01–08) and regional loaner pools (761–768): fuel + flat rate, plus $0.425 per mile for trucks. Actual cost (Distribution 353/356/359/489, Millwork 450, Headquarters 730/735/900, 355CD and 355 Reload): fuel + maintenance + depreciation + lease + registration, taxes, Geotab and Lytx.</li>
       <li><b>Truck fuel.</b> 12 months of WEX gallons (Oct 2025–Sep 2026; diesel, gasoline and DEF combined) × the 2027 blended monthly rate. Trucks with miles but no WEX fuel use their type's median gallons per mile; trucks with no history use their type's company median miles. <b>Distribution (353, 356, 359 incl. 489)</b> fuel mostly from onsite tanks: the 2027 Distribution fuel forecast's diesel gallons are split across each location's trucks by miles and added to their WEX purchases, following the forecast's monthly pattern. All fuel at these sites (tank and WEX) is priced at the forecast's own diesel and propane prices, editable below.</li>
       <li><b>Forklift fuel.</b> AmeriGas propane gallons by location for the same months, split evenly across each location's forklifts × the propane planning price. Distribution locations use the propane gallons in the 2027 Distribution fuel forecast. Shared accounts: 033 covers 033, 355 and 355CD; 359 covers 359 and 489 EWP. The 900 airport tractor runs on Jet A, which is not tracked; it is very low use and carries no fuel. TMFLs, trailers and other equipment have no separate fuel.</li>
       <li><b>Miles.</b> Geotab miles Oct 2025–Sep 2026; blank months are treated as missing, and the reported-month average × 12 is used. Loaner IDs are matched on the asset number.</li>
@@ -380,7 +380,8 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 const LOCS = DATA.locations; const LOC = Object.fromEntries(LOCS.map(l => [l.id, l]));
 const DISTS = DATA.districts.filter(d => LOCS.some(l => l.district === d));
 const LOCS_BY_D = Object.fromEntries(DISTS.map(d => [d, LOCS.filter(l => l.district === d)]));
-const isActual = id => !!LOC[id] && LOC[id].kind !== 'Store';
+const FLATK = new Set(['Store', 'Loaner pool']);   // charged fuel + flat rate + $/mile
+const isActual = id => !!LOC[id] && !FLATK.has(LOC[id].kind);
 const REM = new Set(['TERM', 'OUT']);
 const REM_LABEL = {TERM: 'Terminated (sold / lease returned)', OUT: 'Relocated out of McCoy\'s plan'};
 const locShort = id => id === 'TERM' ? 'Terminated' : id === 'OUT' ? 'Relocated out' : id;
@@ -552,20 +553,20 @@ function removalSummary() {
   return {n, nT, nO, save, out};
 }
 function remainingBook(a, eff) { if (a.own !== 'Owned' || !a.dep) return 0; const d = new Date(a.isd + 'T00:00:00'); const k = (2027 - d.getFullYear()) * 12 + (eff + 1 - (d.getMonth() + 1)) + 1; return Math.max(0, a.term - k + 1) * a.dep; }
-const noRate = (a, dest) => !REM.has(dest) && LOC[dest] && LOC[dest].kind === 'Store' && !(S.p.flat[a.type] > 0);
+const noRate = (a, dest) => !REM.has(dest) && LOC[dest] && FLATK.has(LOC[dest].kind) && !(S.p.flat[a.type] > 0);
 function kpi(cls, eb, v, d) { const k = el('div', {class: 'kpi ' + (cls || '')}); k.append(el('span', {class: 'eyebrow', text: eb})); const vv = el('div', {class: 'v'}); vv.innerHTML = v; k.append(vv); const dd = el('div', {class: 'd'}); dd.innerHTML = d; k.append(dd); return k; }
 const sumLoc = (M, ids) => ids.reduce((s, id) => s + (M[id] ? sum12(M[id].byM) : 0), 0);
 function renderOverview() {
   const bc = totals(BASE, 'charge'), sc = totals(SCEN, 'charge'), bo = totals(BASE, 'op'), so = totals(SCEN, 'op');
   const k = document.getElementById('kpis'); k.innerHTML = '';
   const dch = sc.total - bc.total, dop = so.total - bo.total;
-  const actIds = LOCS.filter(l => l.kind !== 'Store').map(l => l.id), stIds = LOCS.filter(l => l.kind === 'Store').map(l => l.id);
+  const actIds = LOCS.filter(l => !FLATK.has(l.kind)).map(l => l.id), stIds = LOCS.filter(l => FLATK.has(l.kind)).map(l => l.id);
   const ba = sumLoc(BL.ch, actIds), sa = sumLoc(SL.ch, actIds), bs = sumLoc(BL.ch, stIds), ss = sumLoc(SL.ch, stIds);
   const isOp = S.view === 'op', vb = isOp ? bo : bc, vs = isOp ? so : sc, vd = vs.total - vb.total, vn = isOp ? 'actual cost' : 'location charges';
   k.append(kpi('lead', 'Baseline 2027 · ' + vn, usdK(vb.total), isOp ? `Location charges ${usdK(bc.total)}` : `Actual cost ${usdK(bo.total)}`));
   k.append(kpi('', 'Scenario · ' + vn, usdK(vs.total), `<span class="${dcls(vd)}">${sgnK(vd)}</span> vs. baseline (${vb.total ? (vd / vb.total * 100).toFixed(1) : 0}%)`));
-  k.append(kpi('', 'Actual-cost locations', `<span class="${dcls(sa - ba)}">${sgnK(sa - ba)}</span>`, `Distribution, Millwork, HQ, 355CD, 355 and loaner pools: ${usdK(ba)} → ${usdK(sa)}`));
-  k.append(kpi('', 'Store charges', `<span class="${dcls(ss - bs)}">${sgnK(ss - bs)}</span>`, `${usdK(bs)} baseline → ${usdK(ss)}`));
+  k.append(kpi('', 'Actual-cost locations', `<span class="${dcls(sa - ba)}">${sgnK(sa - ba)}</span>`, `Distribution, Millwork, HQ, 355CD and 355: ${usdK(ba)} → ${usdK(sa)}`));
+  k.append(kpi('', 'Store & loaner-pool charges', `<span class="${dcls(ss - bs)}">${sgnK(ss - bs)}</span>`, `${usdK(bs)} baseline → ${usdK(ss)}`));
   const rem = removalSummary(); const remAmt = rem.save + rem.out;
   k.append(kpi('', 'Actual cost change', `<span class="${dcls(dop)}">${sgnK(dop)}</span>`, Math.abs(dop) < 500 ? 'Moves shift charges; real spend is unchanged.' : `Removals ${sgnK(-remAmt)}; fuel and other shifts ${sgnK(dop + remAmt)}.`));
   if (rem.n) k.append(kpi('', 'Savings from removals', `<span class="${remAmt > 0.5 ? 'down' : ''}">${usdK(remAmt)}</span>`, `Terminated (${rem.nT}): ${usdK(rem.save)} company saving. Relocated out (${rem.nO}): ${usdK(rem.out)} leaves McCoy's plan.`));
@@ -733,8 +734,8 @@ function renderAssumptions() {
   grid('gFuel', p.fuelRate, 'fuelRate'); grid('gLp', p.lpRate, 'lpRate'); grid('gDcFuel', p.dcFuelRate, 'dcFuelRate'); grid('gDcLp', p.dcLpRate, 'dcLpRate');
   const tf = document.getElementById('tFlat'); if (!tf.childElementCount) {
     const types = [...new Set(ASSETS.map(a => a.type))].sort();
-    tf.innerHTML = '<thead><tr><th>Asset type</th><th class="n">At stores</th><th class="n">$/month</th></tr></thead>'; const tb = el('tbody');
-    types.forEach((ty, i) => { const atStores = ASSETS.filter(a => a.type === ty && LOC[a.loc].kind === 'Store').length; const tr = el('tr'); tr.innerHTML = `<td>${esc(ty)}</td><td class="n">${atStores}</td><td class="n"></td>`; const inp = el('input', {type: 'number', step: '0.01', id: 'flat' + i, 'aria-label': 'Flat rate ' + ty, placeholder: 'none'}); inp.style.cssText = 'width:96px;padding:4px 6px;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);text-align:right'; if (p.flat[ty] != null) inp.value = p.flat[ty]; inp.dataset.t = ty; inp.addEventListener('change', () => { const x = parseFloat(inp.value); if (inp.value === '') { delete S.p.flat[ty]; changed('Flat rate cleared'); } else if (!isNaN(x) && x >= 0) { S.p.flat[ty] = x; changed('Flat rate updated'); } }); tr.lastChild.append(inp); tb.append(tr); });
+    tf.innerHTML = '<thead><tr><th>Asset type</th><th class="n">At stores &amp; pools</th><th class="n">$/month</th></tr></thead>'; const tb = el('tbody');
+    types.forEach((ty, i) => { const atStores = ASSETS.filter(a => a.type === ty && FLATK.has(LOC[a.loc].kind)).length; const tr = el('tr'); tr.innerHTML = `<td>${esc(ty)}</td><td class="n">${atStores}</td><td class="n"></td>`; const inp = el('input', {type: 'number', step: '0.01', id: 'flat' + i, 'aria-label': 'Flat rate ' + ty, placeholder: 'none'}); inp.style.cssText = 'width:96px;padding:4px 6px;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);text-align:right'; if (p.flat[ty] != null) inp.value = p.flat[ty]; inp.dataset.t = ty; inp.addEventListener('change', () => { const x = parseFloat(inp.value); if (inp.value === '') { delete S.p.flat[ty]; changed('Flat rate cleared'); } else if (!isNaN(x) && x >= 0) { S.p.flat[ty] = x; changed('Flat rate updated'); } }); tr.lastChild.append(inp); tb.append(tr); });
     tf.append(tb);
   } else tf.querySelectorAll('input').forEach(i => { if (document.activeElement !== i) i.value = p.flat[i.dataset.t] != null ? p.flat[i.dataset.t] : ''; });
   const tg = document.getElementById('tFlags'); if (!tg.childElementCount) {
@@ -822,7 +823,7 @@ function exportExcel() {
     ['District', 'Location', 'Rules', 'Baseline charges', 'Scenario charges', 'Charges change', 'Baseline operating', 'Scenario operating', 'Operating change']];
   const tot = (M, id) => M[id] ? sum12(M[id].byM) : 0;
   for (const d of DISTS) { let a = [0, 0, 0, 0]; for (const l of LOCS_BY_D[d]) { const v = [tot(BL.ch, l.id), tot(SL.ch, l.id), tot(BL.op, l.id), tot(SL.op, l.id)]; a = a.map((x, i) => x + v[i]);
-      sm.push([d, locLabel(l.id), l.kind === 'Store' ? 'Store' : 'Actual cost', r2(v[0]), r2(v[1]), r2(v[1] - v[0]), r2(v[2]), r2(v[3]), r2(v[3] - v[2])]); }
+      sm.push([d, locLabel(l.id), l.kind === 'Store' ? 'Store' : l.kind === 'Loaner pool' ? 'Loaner pool (flat rate)' : 'Actual cost', r2(v[0]), r2(v[1]), r2(v[1] - v[0]), r2(v[2]), r2(v[3]), r2(v[3] - v[2])]); }
     sm.push([d + ' total', '', '', r2(a[0]), r2(a[1]), r2(a[1] - a[0]), r2(a[2]), r2(a[3]), r2(a[3] - a[2])]); }
   sm.push([]); sm.push(['Cost category (annual)', 'Baseline charges', 'Scenario charges', 'Change', 'Baseline operating', 'Scenario operating', 'Change']);
   CATS_CH.forEach(c => sm.push([c, r2(bc.byC[c]), r2(sc.byC[c]), r2(sc.byC[c] - bc.byC[c]), bo.byC[c] != null ? r2(bo.byC[c]) : null, so.byC[c] != null ? r2(so.byC[c]) : null, so.byC[c] != null ? r2(so.byC[c] - bo.byC[c]) : null]));
