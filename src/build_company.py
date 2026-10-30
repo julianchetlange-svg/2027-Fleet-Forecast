@@ -203,6 +203,41 @@ for loc in df['loc'].unique():
     else: lp_missing.append(loc)
 df.loc[fk & (df['loc'] == '900'), 'fuelNote'] = 'Airport tractor (moves company planes); Jet A not tracked; very low use, no fuel forecast'
 
+# ---------- Distribution onsite tanks (Distribution_Fuel_Forecast_2027.xlsx) ----------
+# Tank diesel is added to each truck's actual WEX gallons (replacing estimates), split by miles;
+# tank propane replaces the AmeriGas split for those forklifts. Monthly shape follows the forecast.
+df['galW'] = None; df['lpW'] = None
+DCF = A + '5b77a9c6-Distribution_Fuel_Forecast_2027.xlsx'
+if os.path.exists(DCF):
+    inp = pd.read_excel(DCF, sheet_name='Inputs', header=None)
+    def block(start):
+        out = {}
+        for r in range(start, start + 3):
+            name = str(inp.iloc[r, 0]); vals = [float(v) for v in inp.iloc[r, 1:13]]
+            out[name.split()[0]] = vals
+        return out
+    tank_d, tank_p = block(5), block(12)   # rows: 353, 356, 359 (incl. 489)
+    groups = {'353': ['353'], '356': ['356'], '359': ['359', '489']}
+    for acct, members in groups.items():
+        dm, pm = tank_d[acct], tank_p[acct]
+        tr_m = (df.cls == 'Truck') & df['loc'].isin(members)
+        wex = df.loc[tr_m].apply(lambda r: 0.0 if 'No WEX fuel' in (r.galNote or '') else r.gal, axis=1)
+        miles = df.loc[tr_m, 'miles']; share = miles / miles.sum()
+        for i in df.index[tr_m]:
+            tank = sum(dm) * share[i]; w = wex[i]
+            total = w + tank
+            monthly = [w / 12 + share[i] * dm[k] for k in range(12)]
+            df.at[i, 'gal'] = total
+            df.at[i, 'galW'] = [m * 12 / total for m in monthly] if total else None
+            df.at[i, 'gpm'] = total / df.at[i, 'miles'] if df.at[i, 'miles'] else df.at[i, 'gpm']
+            df.at[i, 'galNote'] = 'Onsite tank diesel (Distribution 2027 forecast) split by miles' + (', plus WEX purchases' if w else '')
+        fk_m = (df.cls == 'Forklift') & df['loc'].isin(members); n = fk_m.sum()
+        if n:
+            tot = sum(pm)
+            for i in df.index[fk_m]:
+                df.at[i, 'lp'] = tot / n; df.at[i, 'lpW'] = [v * 12 / tot for v in pm]
+    print('tank diesel gal', round(sum(sum(v) for v in tank_d.values())), 'tank LP gal', round(sum(sum(v) for v in tank_p.values())))
+
 # flags
 def flags(r):
     f = []
@@ -219,7 +254,7 @@ df['flags'] = df.apply(flags, axis=1)
 FUEL27 = [5.198, 5.016, 4.834, 4.590, 4.455, 4.320, 4.185, 4.095, 4.005, 3.915, 3.825, 3.735]
 LP27 = [1.624, 1.637, 1.626, 1.610, 1.604, 1.585, 1.591, 1.578, 1.567, 1.540, 1.524, 1.525]
 cols = ['id', 'loc', 'type', 'cls', 'make', 'own', 'status', 'isd', 'term', 'dep', 'depElig', 'depSrc', 'lease', 'flat',
-        'maint', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'flags']
+        'maint', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'flags', 'galW', 'lpW']
 out = dict(generated='2026-10-30',
            locations=[dict(id=r['Store Number'], name=r['name'], district=r.district, kind=r.kind) for _, r in locs.iterrows()],
            districts=DORDER, assets=json.loads(df[cols].to_json(orient='records')),

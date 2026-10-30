@@ -138,8 +138,8 @@
     <ul class="rules" id="methodList">
       <li><b>Scope.</b> <span id="mScope"></span> Every active asset on the asset roster except 950 Rio Truss. The roster sets location and in-service date. 033 Pharr, 355CD and 355 Pharr Reload sit in Region 05; regional loaner pools (761–767) sit in their regions.</li>
       <li><b>Cost rules.</b> Stores (Regions 01–08): fuel + flat rate, plus $0.425 per mile for trucks. Actual cost (Distribution 353/356/359/489, Millwork 450, Headquarters 730/735/900, 355CD, 355 Reload and loaner pools): fuel + maintenance + depreciation + lease + registration, taxes, Geotab and Lytx.</li>
-      <li><b>Truck fuel.</b> 12 months of WEX gallons (Oct 2025–Sep 2026; diesel, gasoline and DEF combined) × the 2027 blended monthly rate. Trucks with miles but no WEX fuel use their type's median gallons per mile; trucks with no history use their type's company median miles.</li>
-      <li><b>Forklift fuel.</b> AmeriGas propane gallons by location for the same months, split evenly across each location's forklifts × the propane planning price. Shared accounts: 033 covers 033, 355 and 355CD; 359 covers 359 and 489 EWP. The 900 airport tractor runs on Jet A, which is not tracked; it is very low use and carries no fuel. TMFLs, trailers and other equipment have no separate fuel.</li>
+      <li><b>Truck fuel.</b> 12 months of WEX gallons (Oct 2025–Sep 2026; diesel, gasoline and DEF combined) × the 2027 blended monthly rate. Trucks with miles but no WEX fuel use their type's median gallons per mile; trucks with no history use their type's company median miles. <b>Distribution (353, 356, 359 incl. 489)</b> fuel mostly from onsite tanks: the 2027 Distribution fuel forecast's diesel gallons are split across each location's trucks by miles and added to their WEX purchases, following the forecast's monthly pattern.</li>
+      <li><b>Forklift fuel.</b> AmeriGas propane gallons by location for the same months, split evenly across each location's forklifts × the propane planning price. Distribution locations use the propane gallons in the 2027 Distribution fuel forecast. Shared accounts: 033 covers 033, 355 and 355CD; 359 covers 359 and 489 EWP. The 900 airport tractor runs on Jet A, which is not tracked; it is very low use and carries no fuel. TMFLs, trailers and other equipment have no separate fuel.</li>
       <li><b>Miles.</b> Geotab miles Oct 2025–Sep 2026; blank months are treated as missing, and the reported-month average × 12 is used. Loaner IDs are matched on the asset number.</li>
       <li><b>Maintenance.</b> Vendor invoices Oct 2025–Sep 2026 (all invoice statuses, credits netted), spread across 2027 by the company-wide monthly pattern. Registration work orders are excluded where the fee file supplies registration.</li>
       <li><b>Depreciation.</b> Monthly amount from the March 2026 file (components summed by asset); provided costs ÷ term for new units. The in-service month is month 1; trucks and trailers stop after 60 months; forklifts, TMFLs, golf carts, scissor lifts and other equipment after 84. Leased assets get no depreciation.</li>
@@ -228,7 +228,7 @@ function run(assign) {
     const lp = a.cls === 'Forklift' ? a.lp + (lpPool[loc] && fkAt[loc] ? lpPool[loc] / fkAt[loc] : 0) : 0;
     const flat = S.p.flat[a.type] || 0;
     for (let i = 0; i < 12; i++) {
-      const tf = gal / 12 * S.p.fuelRate[i], ff = lp / 12 * S.p.lpRate[i];
+      const tf = gal / 12 * (a.galW ? a.galW[i] : 1) * S.p.fuelRate[i], ff = lp / 12 * (a.lpW ? a.lpW[i] : 1) * S.p.lpRate[i];
       const maint = a.maint * mt / 12 * season[i], dep = a.dep * a.depElig[i], lease = a.lease;
       op['Truck fuel'][i] = tf; op['Forklift fuel'][i] = ff; op.Maintenance[i] = maint; op.Depreciation[i] = dep; op.Lease[i] = lease; op['Registration & taxes'][i] = a.reg; op['Geotab & Lytx'][i] = a.tel;
       ch['Truck fuel'][i] = tf; ch['Forklift fuel'][i] = ff;
