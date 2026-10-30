@@ -88,12 +88,20 @@ FLAT = {'10K Yard Forklift': 1305.79, "12' Slide Flatbed": 1192.80, "16' Conveyo
         'Truck Mounted Forklift': 1152.43}
 
 # ---------- fees (registration, taxes, Geotab, Lytx; monthly) ----------
-fee_files = [A + '3f23cdde-Reg_Tax_Geo_LYTX.xlsx'] + ([INPUTS + 'fees.xlsx'] if os.path.exists(INPUTS + 'fees.xlsx') else [])
-fee = pd.concat([pd.read_excel(f, sheet_name=0, dtype={'Asset Name': str}) for f in fee_files])
-fee.columns = [c.strip() for c in fee.columns]
-fee = fee.drop_duplicates('Asset Name', keep='last').set_index('Asset Name')
+fee_files = [A + '3f23cdde-Reg_Tax_Geo_LYTX.xlsx', A + '04beebbc-Current_Assets_Reg_Tax_Geo_Lytx.xlsx'] + ([INPUTS + 'fees.xlsx'] if os.path.exists(INPUTS + 'fees.xlsx') else [])
+def ldfee(f):
+    x = pd.read_excel(f, sheet_name=0, dtype={'Asset Name': str}); x.columns = [c.strip() for c in x.columns]
+    return x.rename(columns={'Registration Monthly': 'Registraiton Fee', 'Taxas Monthly': 'Monthly Taxes'})
 FC = ['Registraiton Fee', 'Monthly Taxes', 'Geotab', 'Lytx']
-for c in FC: fee[c] = pd.to_numeric(fee[c], errors='coerce').fillna(0)
+fee = None
+for f in fee_files:   # later files win; a blank in a later file keeps the earlier file's value
+    if not os.path.exists(f): continue
+    x = ldfee(f).drop_duplicates('Asset Name', keep='last').set_index('Asset Name')
+    for c in FC + ['Asset Original Value']: x[c] = pd.to_numeric(x[c], errors='coerce') if c in x else float('nan')
+    x = x[FC + ['Asset Original Value']]
+    fee = x if fee is None else x.combine_first(fee)
+FEE_NA = set(fee.index[fee[FC[0]].isna() | fee[FC[1]].isna()])   # still blank: estimated from cost below
+for c in FC: fee[c] = fee[c].fillna(0)
 HASFEE = set(fee.index)
 
 # ---------- maintenance ----------
@@ -135,6 +143,10 @@ LP_GROUPS = {'033': ['033', '355', '355CD'], '359': ['359', '489']}   # one LP a
 
 # ---------- assemble ----------
 rows = []
+_fv = a.set_index('Asset Name').join(fee[['Asset Original Value']], how='left')
+_fv = _fv[_fv['Asset Original Value'] > 0]
+PEERV = {(k[0], k[1]): float(v) for k, v in _fv.groupby(['Asset Template Name', _fv.isd.dt.year])['Asset Original Value'].median().items()}
+PEERV.update({(k, None): float(v) for k, v in _fv.groupby('Asset Template Name')['Asset Original Value'].median().items()})
 for _, r in a.iterrows():
     aid, loc, c = r['Asset Name'], r['Store Number'], r.cls
     owned = r['Asset Ownership'] != 'Operating Lease'
@@ -148,6 +160,11 @@ for _, r in a.iterrows():
                miles=0.0, gal=0.0, lp=0.0, milesNote='', galNote='', fuelNote='')
     if aid in fee.index:
         rec['reg'] = round(float(fee.loc[aid, FC[0]]) + float(fee.loc[aid, FC[1]]), 4); rec['tel'] = float(fee.loc[aid, FC[2]]) + float(fee.loc[aid, FC[3]])
+        if aid in FEE_NA:   # fee file left this blank (no original value): same formulas, cost from depreciation x term
+            pv = PEERV.get((r['Asset Template Name'], r.isd.year)) or PEERV.get((r['Asset Template Name'], None))
+            cost, how = (pv, 'median original value of the same type' + (' bought the same year' if PEERV.get((r['Asset Template Name'], r.isd.year)) else '')) if pv else (depm * int(r.term), 'depreciation x term')
+            rec['reg'] = round(cost * (0.0005 if c in ('Truck', 'Trailer') else 0) + cost / 1500, 4)
+            rec['feeNote'] = f'Registration/taxes estimated (no original value in fee file): cost ${cost:,.0f}, {how}'
     else:
         rec['reg'] = 0.0; rec['tel'] = 0.0
     if c == 'Truck':
@@ -248,6 +265,7 @@ def flags(r):
     if r.status == 'Loaner': f.append('Loaner unit')
     if r.own == 'Owned' and r.dep == 0 and any(r.depElig): f.append('In term but no depreciation amount (awaiting input)')
     if r.id not in HASFEE: f.append('Registration, taxes, Geotab and Lytx pending company-wide fee file')
+    if isinstance(r.get('feeNote'), str) and r.get('feeNote'): f.append(r.get('feeNote'))
     for k in ('milesNote', 'galNote', 'fuelNote', 'leaseNote'):
         if r[k]: f.append(r[k])
     if r.cls == 'Forklift' and r['loc'] in lp_missing and r['loc'] != '900': f.append('No propane data for this location')
