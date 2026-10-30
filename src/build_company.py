@@ -145,8 +145,18 @@ LP_GROUPS = {'033': ['033', '355', '355CD'], '359': ['359', '489']}   # one LP a
 rows = []
 _fv = a.set_index('Asset Name').join(fee[['Asset Original Value']], how='left')
 _fv = _fv[_fv['Asset Original Value'] > 0]
-PEERV = {(k[0], k[1]): float(v) for k, v in _fv.groupby(['Asset Template Name', _fv.isd.dt.year])['Asset Original Value'].median().items()}
-PEERV.update({(k, None): float(v) for k, v in _fv.groupby('Asset Template Name')['Asset Original Value'].median().items()})
+def peer_cost(ty, yr):
+    # same asset type, closest purchase years: widen the window until at least 3 peers (or the nearest year that has any)
+    g = _fv[_fv['Asset Template Name'] == ty]; yrs = g.isd.dt.year
+    if not len(g): return None, ''
+    if (yrs == yr).sum(): return float(g[yrs == yr]['Asset Original Value'].median()), f'median cost of {int((yrs == yr).sum())} same-type assets bought in {yr}'
+    for k in range(1, 40):
+        m = (yrs - yr).abs() <= k
+        if m.sum() >= 3 or (m.sum() and k >= 4):
+            if m.sum() == 1: return float(g[m]['Asset Original Value'].iloc[0]), f'cost of the closest-age same-type asset (bought {int(yrs[m].iloc[0])})'
+            return float(g[m]['Asset Original Value'].median()), f'median cost of {int(m.sum())} same-type assets bought {yr - k}-{yr + k}'
+    near = yrs.iloc[(yrs - yr).abs().argsort().iloc[0]]
+    return float(g[yrs == near]['Asset Original Value'].median()), f'median cost of same-type assets bought in {near} (closest year)'
 for _, r in a.iterrows():
     aid, loc, c = r['Asset Name'], r['Store Number'], r.cls
     owned = r['Asset Ownership'] != 'Operating Lease'
@@ -161,8 +171,8 @@ for _, r in a.iterrows():
     if aid in fee.index:
         rec['reg'] = round(float(fee.loc[aid, FC[0]]) + float(fee.loc[aid, FC[1]]), 4); rec['tel'] = float(fee.loc[aid, FC[2]]) + float(fee.loc[aid, FC[3]])
         if aid in FEE_NA:   # fee file left this blank (no original value): same formulas, cost from depreciation x term
-            pv = PEERV.get((r['Asset Template Name'], r.isd.year)) or PEERV.get((r['Asset Template Name'], None))
-            cost, how = (pv, 'median original value of the same type' + (' bought the same year' if PEERV.get((r['Asset Template Name'], r.isd.year)) else '')) if pv else (depm * int(r.term), 'depreciation x term')
+            pv, how = peer_cost(r['Asset Template Name'], r.isd.year)
+            cost = pv if pv else depm * int(r.term); how = how if pv else 'depreciation x term'
             rec['reg'] = round(cost * (0.0005 if c in ('Truck', 'Trailer') else 0) + cost / 1500, 4)
             rec['feeNote'] = f'Registration/taxes estimated (no original value in fee file): cost ${cost:,.0f}, {how}'
     else:
