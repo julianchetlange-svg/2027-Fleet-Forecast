@@ -207,6 +207,7 @@ df.loc[fk & (df['loc'] == '900'), 'fuelNote'] = 'Airport tractor (moves company 
 # Tank diesel is added to each truck's actual WEX gallons (replacing estimates), split by miles;
 # tank propane replaces the AmeriGas split for those forklifts. Monthly shape follows the forecast.
 df['galW'] = None; df['lpW'] = None
+df['dc'] = 0; DC_FUEL = DC_LP = None
 DCF = A + '5b77a9c6-Distribution_Fuel_Forecast_2027.xlsx'
 if os.path.exists(DCF):
     inp = pd.read_excel(DCF, sheet_name='Inputs', header=None)
@@ -217,7 +218,10 @@ if os.path.exists(DCF):
             out[name.split()[0]] = vals
         return out
     tank_d, tank_p = block(5), block(12)   # rows: 353, 356, 359 (incl. 489)
+    DC_FUEL = [round(float(v), 4) for v in inp.iloc[8, 1:13]]; DC_LP = [round(float(v), 4) for v in inp.iloc[15, 1:13]]
+    print('DC prices', DC_FUEL, DC_LP)
     groups = {'353': ['353'], '356': ['356'], '359': ['359', '489']}
+    df.loc[df['loc'].isin(['353', '356', '359', '489']), 'dc'] = 1
     for acct, members in groups.items():
         dm, pm = tank_d[acct], tank_p[acct]
         tr_m = (df.cls == 'Truck') & df['loc'].isin(members)
@@ -254,11 +258,11 @@ df['flags'] = df.apply(flags, axis=1)
 FUEL27 = [5.198, 5.016, 4.834, 4.590, 4.455, 4.320, 4.185, 4.095, 4.005, 3.915, 3.825, 3.735]
 LP27 = [1.624, 1.637, 1.626, 1.610, 1.604, 1.585, 1.591, 1.578, 1.567, 1.540, 1.524, 1.525]
 cols = ['id', 'loc', 'type', 'cls', 'make', 'own', 'status', 'isd', 'term', 'dep', 'depElig', 'depSrc', 'lease', 'flat',
-        'maint', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'flags', 'galW', 'lpW']
+        'maint', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'flags', 'galW', 'lpW', 'dc']
 out = dict(generated='2026-10-30',
            locations=[dict(id=r['Store Number'], name=r['name'], district=r.district, kind=r.kind) for _, r in locs.iterrows()],
            districts=DORDER, assets=json.loads(df[cols].to_json(orient='records')),
-           flat=FLAT, fuelRate=FUEL27, lpRate=LP27, mileRate=0.425,
+           flat=FLAT, fuelRate=FUEL27, lpRate=LP27, dcFuelRate=DC_FUEL, dcLpRate=DC_LP, mileRate=0.425,
            maintSeason=dict(company=season(ms)))
 json.dump(out, open(OUT + 'data.json', 'w'), separators=(',', ':'))
 

@@ -126,6 +126,10 @@
         <div class="rate-grid" id="gFuel"></div>
         <h3 style="margin:14px 0 8px">Propane planning price, $/gal</h3>
         <div class="rate-grid" id="gLp"></div>
+        <h3 style="margin:14px 0 8px">Distribution diesel price (353, 356, 359, 489), $/gal</h3>
+        <div class="rate-grid" id="gDcFuel"></div>
+        <h3 style="margin:14px 0 8px">Distribution propane price, $/gal</h3>
+        <div class="rate-grid" id="gDcLp"></div>
       </div>
       <div>
         <h3 style="margin-bottom:8px">Store flat rates, $/month</h3>
@@ -138,7 +142,7 @@
     <ul class="rules" id="methodList">
       <li><b>Scope.</b> <span id="mScope"></span> Every active asset on the asset roster except 950 Rio Truss. The roster sets location and in-service date. 033 Pharr, 355CD and 355 Pharr Reload sit in Region 05; regional loaner pools (761–767) sit in their regions.</li>
       <li><b>Cost rules.</b> Stores (Regions 01–08): fuel + flat rate, plus $0.425 per mile for trucks. Actual cost (Distribution 353/356/359/489, Millwork 450, Headquarters 730/735/900, 355CD, 355 Reload and loaner pools): fuel + maintenance + depreciation + lease + registration, taxes, Geotab and Lytx.</li>
-      <li><b>Truck fuel.</b> 12 months of WEX gallons (Oct 2025–Sep 2026; diesel, gasoline and DEF combined) × the 2027 blended monthly rate. Trucks with miles but no WEX fuel use their type's median gallons per mile; trucks with no history use their type's company median miles. <b>Distribution (353, 356, 359 incl. 489)</b> fuel mostly from onsite tanks: the 2027 Distribution fuel forecast's diesel gallons are split across each location's trucks by miles and added to their WEX purchases, following the forecast's monthly pattern.</li>
+      <li><b>Truck fuel.</b> 12 months of WEX gallons (Oct 2025–Sep 2026; diesel, gasoline and DEF combined) × the 2027 blended monthly rate. Trucks with miles but no WEX fuel use their type's median gallons per mile; trucks with no history use their type's company median miles. <b>Distribution (353, 356, 359 incl. 489)</b> fuel mostly from onsite tanks: the 2027 Distribution fuel forecast's diesel gallons are split across each location's trucks by miles and added to their WEX purchases, following the forecast's monthly pattern. All fuel at these sites (tank and WEX) is priced at the forecast's own diesel and propane prices, editable below.</li>
       <li><b>Forklift fuel.</b> AmeriGas propane gallons by location for the same months, split evenly across each location's forklifts × the propane planning price. Distribution locations use the propane gallons in the 2027 Distribution fuel forecast. Shared accounts: 033 covers 033, 355 and 355CD; 359 covers 359 and 489 EWP. The 900 airport tractor runs on Jet A, which is not tracked; it is very low use and carries no fuel. TMFLs, trailers and other equipment have no separate fuel.</li>
       <li><b>Miles.</b> Geotab miles Oct 2025–Sep 2026; blank months are treated as missing, and the reported-month average × 12 is used. Loaner IDs are matched on the asset number.</li>
       <li><b>Maintenance.</b> Vendor invoices Oct 2025–Sep 2026 (all invoice statuses, credits netted), spread across 2027 by the company-wide monthly pattern. Registration work orders are excluded where the fee file supplies registration.</li>
@@ -173,7 +177,7 @@ const CATS_CH = ['Truck fuel','Forklift fuel','Maintenance','Depreciation','Leas
 const CATS_OP = ['Truck fuel','Forklift fuel','Maintenance','Depreciation','Lease','Registration & taxes','Geotab & Lytx'];
 const FIXED = ['Maintenance', 'Depreciation', 'Lease', 'Registration & taxes', 'Geotab & Lytx'];
 const KIND_CHIP = {Store: 's', Central: 'c', Distribution: 'c', Millwork: 'c', Headquarters: 'c', 'Loaner pool': 'k'};
-const DEF = () => ({fuelRate: DATA.fuelRate.slice(), lpRate: DATA.lpRate.slice(), mileRate: DATA.mileRate, maintTrend: 0, maintSeason: 'company', mileGrowth: 0, flat: Object.assign({}, DATA.flat)});
+const DEF = () => ({fuelRate: DATA.fuelRate.slice(), lpRate: DATA.lpRate.slice(), dcFuelRate: (DATA.dcFuelRate || DATA.fuelRate).slice(), dcLpRate: (DATA.dcLpRate || DATA.lpRate).slice(), mileRate: DATA.mileRate, maintTrend: 0, maintSeason: 'company', mileGrowth: 0, flat: Object.assign({}, DATA.flat)});
 const KEY = 'mccoys-fleet-2027.v1';
 let S = {assign: {}, eff: {}, p: DEF(), view: 'charge', dcase: 'scen', exp: {}, expO: {}};
 function loadState(o) { S = Object.assign(S, o); S.eff = o.eff || {}; S.exp = o.exp || {}; S.expO = o.expO || {}; S.p = Object.assign(DEF(), o.p || {}); if (!DATA.maintSeason[S.p.maintSeason] && S.p.maintSeason !== 'flat') S.p.maintSeason = 'company'; }
@@ -228,7 +232,7 @@ function run(assign) {
     const lp = a.cls === 'Forklift' ? a.lp + (lpPool[loc] && fkAt[loc] ? lpPool[loc] / fkAt[loc] : 0) : 0;
     const flat = S.p.flat[a.type] || 0;
     for (let i = 0; i < 12; i++) {
-      const tf = gal / 12 * (a.galW ? a.galW[i] : 1) * S.p.fuelRate[i], ff = lp / 12 * (a.lpW ? a.lpW[i] : 1) * S.p.lpRate[i];
+      const tf = gal / 12 * (a.galW ? a.galW[i] : 1) * (a.dc ? S.p.dcFuelRate : S.p.fuelRate)[i], ff = lp / 12 * (a.lpW ? a.lpW[i] : 1) * (a.dc ? S.p.dcLpRate : S.p.lpRate)[i];
       const maint = a.maint * mt / 12 * season[i], dep = a.dep * a.depElig[i], lease = a.lease;
       op['Truck fuel'][i] = tf; op['Forklift fuel'][i] = ff; op.Maintenance[i] = maint; op.Depreciation[i] = dep; op.Lease[i] = lease; op['Registration & taxes'][i] = a.reg; op['Geotab & Lytx'][i] = a.tel;
       ch['Truck fuel'][i] = tf; ch['Forklift fuel'][i] = ff;
@@ -512,7 +516,7 @@ function renderAssumptions() {
   setv('iGrowth', p.mileGrowth); setv('iSeason', p.maintSeason); setv('iMaint', p.maintTrend); setv('iMile', p.mileRate);
   const grid = (id, arr, key) => { const g = document.getElementById(id); if (g.childElementCount) { arr.forEach((v, i) => { const e = g.querySelectorAll('input')[i]; if (document.activeElement !== e) e.value = v; }); return; }
     arr.forEach((v, i) => { const lab = el('label', {text: MONTHS[i]}); const inp = el('input', {type: 'number', step: '0.001', id: key + i, value: v}); inp.addEventListener('change', () => { const x = parseFloat(inp.value); if (!isNaN(x) && x >= 0) { S.p[key][i] = x; changed('Rate updated'); } }); lab.append(inp); g.append(lab); }); };
-  grid('gFuel', p.fuelRate, 'fuelRate'); grid('gLp', p.lpRate, 'lpRate');
+  grid('gFuel', p.fuelRate, 'fuelRate'); grid('gLp', p.lpRate, 'lpRate'); grid('gDcFuel', p.dcFuelRate, 'dcFuelRate'); grid('gDcLp', p.dcLpRate, 'dcLpRate');
   const tf = document.getElementById('tFlat'); if (!tf.childElementCount) {
     const types = [...new Set(ASSETS.map(a => a.type))].sort();
     tf.innerHTML = '<thead><tr><th>Asset type</th><th class="n">At stores</th><th class="n">$/month</th></tr></thead>'; const tb = el('tbody');
@@ -562,7 +566,7 @@ document.getElementById('btnCopyScen').addEventListener('click', () => {
   try { navigator.clipboard.writeText(txt).then(() => toast(`${ids.length} changes copied`), () => toast('Copy was blocked; the list is shown below to copy by hand')); } catch (e) { toast('Copy was blocked'); }
   const box = document.getElementById('scenText'); box.value = txt; box.hidden = false; box.select();
 });
-document.getElementById('btnResetA').addEventListener('click', () => { S.p = DEF(); ['gFuel', 'gLp', 'tFlat'].forEach(id => document.getElementById(id).innerHTML = ''); changed('Default inputs restored', true); });
+document.getElementById('btnResetA').addEventListener('click', () => { S.p = DEF(); ['gFuel', 'gLp', 'gDcFuel', 'gDcLp', 'tFlat'].forEach(id => document.getElementById(id).innerHTML = ''); changed('Default inputs restored', true); });
 [['iGrowth', 'mileGrowth'], ['iMaint', 'maintTrend'], ['iMile', 'mileRate']].forEach(([id, k]) => document.getElementById(id).addEventListener('change', e => { const x = parseFloat(e.target.value); if (!isNaN(x)) { S.p[k] = x; changed('Input updated', true); } }));
 document.getElementById('iSeason').addEventListener('change', e => { S.p.maintSeason = e.target.value; changed('Maintenance timing updated', true); });
 const fDist = document.getElementById('fDist'), fLoc = document.getElementById('fLoc'), aDist = document.getElementById('aDist'), aLoc = document.getElementById('aLoc');
@@ -630,6 +634,8 @@ function exportExcel() {
   const ip = [['Key', 'Input', 'Value'], ['mileGrowth', 'Truck mileage change vs last 12 months (%)', S.p.mileGrowth], ['maintTrend', 'Maintenance trend (%)', S.p.maintTrend], ['maintSeason', 'Maintenance timing (company / flat)', S.p.maintSeason], ['mileRate', 'Store mileage charge ($/mile)', S.p.mileRate]];
   MONTHS.forEach((m, i) => ip.push(['fuelRate.' + i, 'Blended fuel rate ' + m + ' 2027 ($/gal)', S.p.fuelRate[i]]));
   MONTHS.forEach((m, i) => ip.push(['lpRate.' + i, 'Propane price ' + m + ' 2027 ($/gal)', S.p.lpRate[i]]));
+  MONTHS.forEach((m, i) => ip.push(['dcFuelRate.' + i, 'Distribution diesel price ' + m + ' 2027 ($/gal)', S.p.dcFuelRate[i]]));
+  MONTHS.forEach((m, i) => ip.push(['dcLpRate.' + i, 'Distribution propane price ' + m + ' 2027 ($/gal)', S.p.dcLpRate[i]]));
   Object.keys(S.p.flat).sort().forEach(ty => ip.push(['flat.' + ty, 'Flat rate ' + ty + ' ($/month)', S.p.flat[ty]]));
   XLSX.utils.book_append_sheet(wb, mkSheet(ip, [], [26, 44, 12]), 'Inputs');
   const st = new Date(); const fn = `McCoys_Fleet_Scenario_${st.getFullYear()}-${String(st.getMonth() + 1).padStart(2, '0')}-${String(st.getDate()).padStart(2, '0')}.xlsx`;
@@ -651,8 +657,8 @@ function importExcel(file) {
       }
       const wi = wb.Sheets['Inputs'];
       if (wi) { const p = DEF(); XLSX.utils.sheet_to_json(wi, {defval: ''}).forEach(r => { const k = String(r['Key']); if (k === 'maintSeason') { const sv2 = String(r['Value']).trim(); if (['company', 'flat'].includes(sv2)) p.maintSeason = sv2; return; } const v = parseFloat(r['Value']); if (isNaN(v)) return;
-        if (k.startsWith('fuelRate.')) p.fuelRate[+k.split('.')[1]] = v; else if (k.startsWith('lpRate.')) p.lpRate[+k.split('.')[1]] = v; else if (k.startsWith('flat.')) p.flat[k.slice(5)] = v; else if (k in p) p[k] = v; });
-        S.p = p; ['gFuel', 'gLp', 'tFlat'].forEach(id => document.getElementById(id).innerHTML = ''); }
+        const mk = k.split('.')[0]; if (['fuelRate', 'lpRate', 'dcFuelRate', 'dcLpRate'].includes(mk)) p[mk][+k.split('.')[1]] = v; else if (k.startsWith('flat.')) p.flat[k.slice(5)] = v; else if (k in p) p[k] = v; });
+        S.p = p; ['gFuel', 'gLp', 'gDcFuel', 'gDcLp', 'tFlat'].forEach(id => document.getElementById(id).innerHTML = ''); }
       S.assign = assign; S.eff = eff;
       changed(`Loaded ${Object.keys(assign).length} changes from ${file.name}` + (skipped.length ? ` (skipped ${skipped.length}: ${skipped.slice(0, 5).join(', ')})` : ''), true);
     } catch (e) { toast('Could not read that file. Use a workbook exported from this page.'); }
