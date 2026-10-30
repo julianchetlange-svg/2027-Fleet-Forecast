@@ -7,6 +7,7 @@
       <div class="sub" id="hdrSub">Regions 01–08, Distribution, Millwork and Headquarters · baseline vs. scenario</div>
     </div>
     <div class="tools">
+      <div class="seg hseg" role="group" aria-label="Cost view (all tabs)" data-seg="view" title="Flip every tab between location charges and actual cost. 450 Millwork and Distribution 353, 356, 359 and 489 are on straight P&amp;L and show actual cost either way."><button type="button" data-val="charge">Location charges</button><button type="button" data-val="op">Actual cost</button></div>
       <span class="pill base" id="hdrStatus">Baseline only</span>
       <button class="btn sun small xbtn" id="btnExport" type="button">Export to Excel</button>
       <button class="btn ghost small" id="btnReset" type="button">Reset scenario</button>
@@ -29,15 +30,15 @@
   <div class="kpis" id="kpis"></div>
   <div class="panel">
     <div class="callout">
-      <div class="ch"><span class="eyebrow">Location charges</span><p><b>What each location is charged under the cost rules.</b> Stores carry fuel, the fixed flat rate and $0.425 per truck mile. Distribution, Millwork, Headquarters, 355CD, 355 Reload and the regional loaner pools carry actual cost: fuel, maintenance, depreciation, lease, registration, taxes, Geotab and Lytx.</p></div>
-      <div class="op"><span class="eyebrow">Operating cost</span><p><b>What McCoy's actually spends.</b> Fuel, maintenance, depreciation, lease, registration, taxes and telematics for every asset, wherever it sits. Flat rates and mileage charges are internal and left out, so only a real change in miles, fuel or fleet size moves this number.</p></div>
+      <div class="ch"><span class="eyebrow">Location charges</span><p><b>What each location is charged under the cost rules.</b> Stores carry fuel, the fixed flat rate and $0.425 per truck mile. Distribution, Millwork, Headquarters, 355CD, 355 Reload and the regional loaner pools carry actual cost: fuel, maintenance, depreciation, lease, registration, taxes, Geotab and Lytx. <b>450 Millwork and Distribution 353, 356, 359 and 489 are on straight P&amp;L</b>, so they show the same actual cost in both views.</p></div>
+      <div class="op"><span class="eyebrow">Actual cost</span><p><b>What McCoy's actually spends.</b> Fuel, maintenance, depreciation, lease, registration, taxes and telematics for every asset, wherever it sits. Flat rates and mileage charges are internal and left out, so only a real change in miles, fuel or fleet size moves this number.</p></div>
     </div>
   </div>
   <div class="grid2">
     <div class="panel">
       <div class="phead">
         <div><h2>Monthly forecast</h2><p class="lede" id="monthLede"></p></div>
-        <div class="seg" role="group" aria-label="Cost view" data-seg="view"><button type="button" data-val="charge">Location charges</button><button type="button" data-val="op">Operating cost</button></div>
+        <div class="seg" role="group" aria-label="Cost view" data-seg="view"><button type="button" data-val="charge">Location charges</button><button type="button" data-val="op">Actual cost</button></div>
       </div>
       <div class="legend"><span><i style="background:var(--s-base)"></i>Baseline</span><span><i style="background:var(--s-scen)"></i>Scenario</span></div>
       <div class="chart" id="chMonth"></div>
@@ -97,7 +98,7 @@
     <div class="phead"><div><h2>Monthly forecast by district and location</h2><p class="lede" id="detLede"></p></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <div class="seg" role="group" aria-label="Case" data-seg="dcase"><button type="button" data-val="base">Baseline</button><button type="button" data-val="scen">Scenario</button><button type="button" data-val="delta">Change</button></div>
-        <div class="seg" role="group" aria-label="Cost view" data-seg="view"><button type="button" data-val="charge">Charges</button><button type="button" data-val="op">Operating</button></div>
+        <div class="seg" role="group" aria-label="Cost view" data-seg="view"><button type="button" data-val="charge">Charges</button><button type="button" data-val="op">Actual</button></div>
       </div></div>
     <div class="filters"><label>Cost category<select id="dCat"></select></label><button class="btn small" type="button" id="expAll">Expand districts</button><button class="btn small" type="button" id="colAll">Collapse all</button><button class="btn small" type="button" id="copyMonth">Copy table as CSV</button></div>
     <div class="tbl-wrap"><table id="tMonth"></table></div>
@@ -148,7 +149,7 @@
       <li><b>Maintenance.</b> Vendor invoices Oct 2025–Sep 2026 (all invoice statuses, credits netted), spread across 2027 by the company-wide monthly pattern. Registration work orders are excluded where the fee file supplies registration.</li>
       <li><b>Depreciation.</b> Monthly amount from the March 2026 file (components summed by asset); provided costs ÷ term for new units. The in-service month is month 1; trucks and trailers stop after 60 months; forklifts, TMFLs, golf carts, scissor lifts and other equipment after 84. Leased assets get no depreciation.</li>
       <li><b>Leases.</b> Fixed monthly rate from the lease file; 747104 ($250) and 747106 ($150) are on holding rentals; rates not yet supplied use the 2020 Toyota batch rate of $447.11. All leases run through Dec 2027.</li>
-      <li><b>Registration, taxes, Geotab and Lytx.</b> Monthly per asset from the company-wide fee file (all 1,441 assets). 15 assets with no original value in that file are estimated with its own formulas (taxes 0.0667% and vehicle/trailer registration 0.05% of cost per month), using the cost of the same type at the closest purchase age (same year when available); they are listed below. Charged at actual-cost locations; at stores they are built into the flat rate. The operating-cost view carries them wherever the asset sits.</li>
+      <li><b>Registration, taxes, Geotab and Lytx.</b> Monthly per asset from the company-wide fee file (all 1,441 assets). 15 assets with no original value in that file are estimated with its own formulas (taxes 0.0667% and vehicle/trailer registration 0.05% of cost per month), using the cost of the same type at the closest purchase age (same year when available); they are listed below. Charged at actual-cost locations; at stores they are built into the flat rate. The actual-cost view carries them wherever the asset sits.</li>
     </ul>
   </div>
   <div class="panel">
@@ -349,27 +350,29 @@ function renderOverview() {
   const dch = sc.total - bc.total, dop = so.total - bo.total;
   const actIds = LOCS.filter(l => l.kind !== 'Store').map(l => l.id), stIds = LOCS.filter(l => l.kind === 'Store').map(l => l.id);
   const ba = sumLoc(BL.ch, actIds), sa = sumLoc(SL.ch, actIds), bs = sumLoc(BL.ch, stIds), ss = sumLoc(SL.ch, stIds);
-  k.append(kpi('lead', 'Baseline 2027 · location charges', usdK(bc.total), `Operating cost ${usdK(bo.total)}`));
-  k.append(kpi('', 'Scenario · location charges', usdK(sc.total), `<span class="${dcls(dch)}">${sgnK(dch)}</span> vs. baseline (${bc.total ? (dch / bc.total * 100).toFixed(1) : 0}%)`));
+  const isOp = S.view === 'op', vb = isOp ? bo : bc, vs = isOp ? so : sc, vd = vs.total - vb.total, vn = isOp ? 'actual cost' : 'location charges';
+  k.append(kpi('lead', 'Baseline 2027 · ' + vn, usdK(vb.total), isOp ? `Location charges ${usdK(bc.total)}` : `Actual cost ${usdK(bo.total)}`));
+  k.append(kpi('', 'Scenario · ' + vn, usdK(vs.total), `<span class="${dcls(vd)}">${sgnK(vd)}</span> vs. baseline (${vb.total ? (vd / vb.total * 100).toFixed(1) : 0}%)`));
   k.append(kpi('', 'Actual-cost locations', `<span class="${dcls(sa - ba)}">${sgnK(sa - ba)}</span>`, `Distribution, Millwork, HQ, 355CD, 355 and loaner pools: ${usdK(ba)} → ${usdK(sa)}`));
   k.append(kpi('', 'Store charges', `<span class="${dcls(ss - bs)}">${sgnK(ss - bs)}</span>`, `${usdK(bs)} baseline → ${usdK(ss)}`));
   const rem = removalSummary(); const remAmt = rem.save + rem.out;
-  k.append(kpi('', 'Operating cost change', `<span class="${dcls(dop)}">${sgnK(dop)}</span>`, Math.abs(dop) < 500 ? 'Moves shift charges; real spend is unchanged.' : `Removals ${sgnK(-remAmt)}; fuel and other shifts ${sgnK(dop + remAmt)}.`));
+  k.append(kpi('', 'Actual cost change', `<span class="${dcls(dop)}">${sgnK(dop)}</span>`, Math.abs(dop) < 500 ? 'Moves shift charges; real spend is unchanged.' : `Removals ${sgnK(-remAmt)}; fuel and other shifts ${sgnK(dop + remAmt)}.`));
   if (rem.n) k.append(kpi('', 'Savings from removals', `<span class="${remAmt > 0.5 ? 'down' : ''}">${usdK(remAmt)}</span>`, `Terminated (${rem.nT}): ${usdK(rem.save)} company saving. Relocated out (${rem.nO}): ${usdK(rem.out)} leaves McCoy's plan.`));
   document.getElementById('kpisR').innerHTML = k.innerHTML;
   const view = S.view; const B = view === 'op' ? bo : bc, Sx = view === 'op' ? so : sc;
-  document.getElementById('monthLede').textContent = `${view === 'op' ? 'Operating cost' : 'Location charges'}: baseline ${usd(B.total)}, scenario ${usd(Sx.total)}. Fuel falls through the year as the 2027 rate drops from $${S.p.fuelRate[0].toFixed(2)} to $${S.p.fuelRate[11].toFixed(2)}.`;
+  document.getElementById('monthLede').textContent = `${view === 'op' ? 'Actual cost' : 'Location charges'}: baseline ${usd(B.total)}, scenario ${usd(Sx.total)}. Fuel falls through the year as the 2027 rate drops from $${S.p.fuelRate[0].toFixed(2)} to $${S.p.fuelRate[11].toFixed(2)}.`;
   drawMonthly(document.getElementById('chMonth'), B.byM, Sx.byM);
   drawCats(document.getElementById('chCat'), view === 'op' ? CATS_OP : CATS_CH, B.byC, Sx.byC);
   renderLocTable();
 }
+const PNL = new Set(['450', '353', '356', '359', '489']);
 function renderLocTable() {
-  const t = document.getElementById('tLoc'); const cats = CATS_CH;
-  t.innerHTML = `<thead><tr><th>District / location</th><th class="n">Assets</th>${cats.map(c => `<th class="n">${c}</th>`).join('')}<th class="n">Baseline charges</th><th class="n">Scenario charges</th><th class="n">Change</th><th class="n">Operating cost (scenario)</th></tr></thead>`;
+  const t = document.getElementById('tLoc'); const isOp = S.view === 'op', cats = isOp ? CATS_OP : CATS_CH, K1 = isOp ? 'op' : 'ch', K2 = isOp ? 'ch' : 'op', w1 = isOp ? 'actual' : 'charges';
+  t.innerHTML = `<thead><tr><th>District / location</th><th class="n">Assets</th>${cats.map(c => `<th class="n">${c}</th>`).join('')}<th class="n">Baseline ${w1}</th><th class="n">Scenario ${w1}</th><th class="n">Change</th><th class="n">${isOp ? 'Location charges' : 'Actual cost'} (scenario)</th></tr></thead>`;
   const tb = el('tbody'); const cntB = {}, cntS = {};
   BASE.rows.forEach(r => cntB[r.loc] = (cntB[r.loc] || 0) + 1); SCEN.rows.forEach(r => { if (!REM.has(r.loc)) cntS[r.loc] = (cntS[r.loc] || 0) + 1; });
   const agg = ids => { const o = {n: 0, n2: 0, b: 0, s: 0, op: 0, c: Object.fromEntries(cats.map(c => [c, 0]))};
-    for (const id of ids) { o.n += cntB[id] || 0; o.n2 += cntS[id] || 0; o.b += BL.ch[id] ? sum12(BL.ch[id].byM) : 0; o.s += SL.ch[id] ? sum12(SL.ch[id].byM) : 0; o.op += SL.op[id] ? sum12(SL.op[id].byM) : 0; if (SL.ch[id]) cats.forEach(c => o.c[c] += sum12(SL.ch[id].byC[c])); }
+    for (const id of ids) { o.n += cntB[id] || 0; o.n2 += cntS[id] || 0; o.b += BL[K1][id] ? sum12(BL[K1][id].byM) : 0; o.s += SL[K1][id] ? sum12(SL[K1][id].byM) : 0; o.op += SL[K2][id] ? sum12(SL[K2][id].byM) : 0; if (SL[K1][id]) cats.forEach(c => o.c[c] += sum12(SL[K1][id].byC[c] || [0])); }
     return o; };
   const cells = o => `<td class="n">${o.n === o.n2 ? f0.format(o.n) : f0.format(o.n) + ' → ' + f0.format(o.n2)}</td>${cats.map(c => `<td class="n">${Math.abs(o.c[c]) >= 0.5 ? usd(o.c[c]) : '–'}</td>`).join('')}<td class="n">${usd(o.b)}</td><td class="n">${usd(o.s)}</td><td class="n ${dcls(o.s - o.b)}">${sgn(o.s - o.b)}</td><td class="n">${usd(o.op)}</td>`;
   for (const d of DISTS) {
@@ -380,7 +383,7 @@ function renderLocTable() {
     tb.append(tr);
     if (!open) continue;
     for (const l of LOCS_BY_D[d]) { const ol = agg([l.id]); const r2 = el('tr', {class: 'lrow' + (ol.n !== ol.n2 || Math.abs(ol.s - ol.b) > 0.5 ? ' moved' : '')});
-      r2.innerHTML = `<td><b>${esc(l.id)}</b> ${esc(l.name)} <span class="chip ${KIND_CHIP[l.kind]}">${esc(l.kind === 'Store' ? 'Store' : l.kind === 'Central' ? 'Central' : l.kind === 'Loaner pool' ? 'Loaner pool' : 'Actual cost')}</span></td>${cells(ol)}`; tb.append(r2); }
+      r2.innerHTML = `<td><b>${esc(l.id)}</b> ${esc(l.name)} <span class="chip ${KIND_CHIP[l.kind]}">${esc(l.kind === 'Store' ? 'Store' : l.kind === 'Central' ? 'Central' : l.kind === 'Loaner pool' ? 'Loaner pool' : PNL.has(l.id) ? 'Straight P&L' : 'Actual cost')}</span></td>${cells(ol)}`; tb.append(r2); }
   }
   const all = agg(LOCS.map(l => l.id)); const tr = el('tr', {class: 'tot'}); tr.innerHTML = `<td>Company total</td>${cells(all)}`; tb.append(tr);
   t.append(tb);
@@ -404,8 +407,8 @@ function renderMoves() {
         : `Removes <b>${usd(fixed)}</b> in maintenance, depreciation, lease and fees from McCoy's 2027 plan${when}. ${a.cls === 'Truck' ? 'Its miles stay with the remaining trucks at ' + a.loc + '.' : ''}`;
       sp.innerHTML = `<b>${esc(id)}</b> ${esc(a.type)} · ${esc(a.loc)} → <b>${dest === 'TERM' ? 'Terminate' : 'Relocate out'}</b><br>${detail}`;
     } else {
-      const d = assetTotal(rs, 'charge') - assetTotal(rb, 'charge');
-      sp.innerHTML = `<b>${esc(id)}</b> ${esc(a.type)} · ${esc(a.loc)} → <b>${esc(dest)} ${esc(LOC[dest].name)}</b> <span class="num">(${sgn(d)} in charges on this asset)</span>${noRate(a, dest) ? `<span class="mflag amber">No store flat rate for ${esc(a.type)}; it is charged $0 at the store. Set a rate on the Assumptions tab.</span>` : ''}`;
+      const d = assetTotal(rs, S.view) - assetTotal(rb, S.view);
+      sp.innerHTML = `<b>${esc(id)}</b> ${esc(a.type)} · ${esc(a.loc)} → <b>${esc(dest)} ${esc(LOC[dest].name)}</b> <span class="num">(${sgn(d)} in ${S.view === 'op' ? 'actual cost' : 'charges'} on this asset)</span>${noRate(a, dest) ? `<span class="mflag amber">No store flat rate for ${esc(a.type)}; it is charged $0 at the store. Set a rate on the Assumptions tab.</span>` : ''}`;
     }
     const ms = el('select', {id: 'eff-' + id, 'aria-label': 'Effective month for ' + id}); MONTHS.forEach((mn, i) => ms.append(el('option', {value: i, text: 'From ' + mn})));
     ms.value = eff; ms.style.cssText = 'padding:3px 6px;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);color:var(--fg)';
@@ -427,7 +430,7 @@ function destOptions(sel, a) { // filled on first focus to keep the table light
 let assetPage = 0; const PAGE = 200;
 function renderAssets() {
   const t = document.getElementById('tAssets'); const fd = document.getElementById('fDist').value, fl = document.getElementById('fLoc').value, fc = document.getElementById('fCls').value, q = document.getElementById('fQ').value.trim().toLowerCase(), fm = document.getElementById('fMoved').value;
-  t.innerHTML = `<thead><tr><th>Asset</th><th>Class</th><th>Owned</th><th>Current</th><th>Assign to</th><th class="n">Miles / yr</th><th class="n">Baseline charges</th><th class="n">Scenario charges</th><th class="n">Change</th><th>Notes</th></tr></thead>`;
+  t.innerHTML = `<thead><tr><th>Asset</th><th>Class</th><th>Owned</th><th>Current</th><th>Assign to</th><th class="n">Miles / yr</th><th class="n">Baseline ${S.view === 'op' ? 'actual' : 'charges'}</th><th class="n">Scenario ${S.view === 'op' ? 'actual' : 'charges'}</th><th class="n">Change</th><th>Notes</th></tr></thead>`;
   const tb = el('tbody'); const list = [];
   SCEN.rows.forEach((rs, i) => {
     const a = rs.a; const dest = S.assign[a.id] || a.loc; const moved = dest !== a.loc;
@@ -440,7 +443,7 @@ function renderAssets() {
   for (const i of list.slice(assetPage * PAGE, assetPage * PAGE + PAGE)) {
     const rs = SCEN.rows[i], rb = BASE.rows[i], a = rs.a; const dest = S.assign[a.id] || a.loc; const moved = dest !== a.loc;
     const io = !(fl || fd) || !moved ? '' : (fl ? dest === fl : (LOC[dest] && LOC[dest].district === fd && LOC[a.loc].district !== fd)) ? `<span class="chip m" style="margin-left:6px">Moving in from ${esc(a.loc)}</span>` : `<span class="chip s" style="margin-left:6px">Moving out</span>`;
-    const b = assetTotal(rb, 'charge'), s = assetTotal(rs, 'charge'), d = s - b;
+    const b = assetTotal(rb, S.view), s = assetTotal(rs, S.view), d = s - b;
     const tr = el('tr'); if (moved) tr.className = 'moved';
     const nr = moved && noRate(a, dest) ? '<span class="chip w" title="No store flat rate for this type">No store rate</span> ' : '';
     tr.innerHTML = `<td><b>${esc(a.id)}</b><span class="sub2">${esc(a.type)}</span></td><td>${a.cls}</td><td>${a.own}</td><td>${esc(a.loc)}${io}</td><td class="sel"></td><td class="n">${a.cls === 'Truck' ? f0.format(rs.miles) + (Math.abs(rs.miles - rb.miles) > 1 ? `<span class="sub2">base ${f0.format(rb.miles)}</span>` : '') : '–'}</td><td class="n">${usd(b)}</td><td class="n">${usd(s)}</td><td class="n ${dcls(d)}">${sgn(d)}</td><td>${nr}${a.flags.length ? `<span class="chip w" title="${esc(a.flags.join('; '))}">${a.flags.length} note${a.flags.length > 1 ? 's' : ''}</span>` : ''}</td>`;
@@ -466,7 +469,7 @@ function renderDetail() {
   const pickLoc = (id, c) => { const b = BL[key][id] ? BL[key][id].byC[c] : zero12(), s = SL[key][id] ? SL[key][id].byC[c] : zero12(); return S.dcase === 'base' ? b : S.dcase === 'scen' ? s : s.map((x, i) => x - b[i]); };
   const pick = (ids, c) => { const m = zero12(); ids.forEach(id => pickLoc(id, c).forEach((x, i) => m[i] += x)); return m; };
   const caseName = {base: 'Baseline', scen: 'Scenario', delta: 'Scenario minus baseline'}[S.dcase];
-  document.getElementById('detLede').textContent = `${caseName} · ${S.view === 'op' ? 'operating cost' : 'location charges'} · ${cat.value || 'all categories'}. Open a district to see its locations, and a location to see its cost categories.`;
+  document.getElementById('detLede').textContent = `${caseName} · ${S.view === 'op' ? 'actual cost' : 'location charges'} · ${cat.value || 'all categories'}. Open a district to see its locations, and a location to see its cost categories.`;
   const t = document.getElementById('tMonth'); t.innerHTML = `<thead><tr><th>District / location</th>${MONTHS.map(m => `<th class="n">${m}</th>`).join('')}<th class="n">2027</th></tr></thead>`;
   const tb = el('tbody'); const csv = [['District', 'Location', 'Cost category', ...MONTHS, '2027']];
   const fmtv = x => S.dcase === 'delta' ? sgn(x) : usd(x), clsv = x => S.dcase === 'delta' ? dcls(x) : '';
@@ -556,7 +559,7 @@ document.querySelectorAll('section.view').forEach(sec => {
 addEventListener('beforeunload', e => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
 
 /* ---------- events ---------- */
-document.querySelectorAll('[data-seg]').forEach(g => g.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S[g.dataset.seg] = b.dataset.val; save(); syncSegs(); renderOverview(); renderDetail(); }));
+document.querySelectorAll('[data-seg]').forEach(g => g.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S[g.dataset.seg] = b.dataset.val; save(); syncSegs(); renderOverview(); renderDetail(); if (g.dataset.seg === 'view') { renderMoves(); renderAssets(); } }));
 const resetScenario = () => { S.assign = {}; S.eff = {}; changed('Scenario cleared to baseline'); };
 document.getElementById('btnReset').addEventListener('click', resetScenario);
 document.getElementById('btnReset2').addEventListener('click', resetScenario);
