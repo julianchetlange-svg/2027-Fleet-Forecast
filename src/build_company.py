@@ -317,8 +317,21 @@ for ty, n in NEW_FLEET:
                    + ('Region 07' if use is not None and (use & r7).any() else 'company store') + ' median for this type; depreciation, maintenance and fees are the median of same-type units bought 2024 or later.']))
 print('planned assets', len(planned), [(p['type'], p['miles'], p['gal'], p['lp'], p['dep'], p['maint'], p['reg']) for p in planned[::1]])
 
+# ---------- loaner pools 765 and 768: no roster assets, so fuel is estimated from the other pools ----------
+pool_gal = df[df['loc'].isin(POOL)].groupby('loc').gal.sum()
+POOL_EST = float(pool_gal.mean())
+EXTRA_LOCS = []
+for pid, reg_name, dist in [('765', 'Region 5', 'Region 05'), ('768', 'Region 8', 'Region 08')]:
+    if pid in set(df['loc']): continue
+    EXTRA_LOCS.append(dict(id=pid, name=reg_name, district=dist, kind='Loaner pool'))
+    planned.append(dict(id=f'{pid}-FUEL', loc=pid, type='Loaner pool fuel (estimate)', cls='Truck', make='Estimate', own='Owned', status='Estimate',
+        isd='2027-01-01', term=60, dep=0.0, depElig=[0] * 12, depSrc='', lease=0.0, flat=None, maint=0.0, miles=0.0, gal=round(POOL_EST, 1), gpm=0.0, lp=0.0,
+        reg=0.0, tel=0.0, geo=0.0, lytx=0.0, galW=None, lpW=None, dc=0,
+        flags=[f'Fuel only: no {pid} assets on the roster, so fuel is the average of the other loaner pools ({POOL_EST:,.0f} gal/yr; pools {", ".join(sorted(pool_gal.index))}).']))
+print('pool gal by pool', pool_gal.round().to_dict(), 'estimate', round(POOL_EST))
+
 out = dict(generated='2026-10-30',
-           locations=[dict(id=r['Store Number'], name=r['name'], district=r.district, kind=r.kind) for _, r in locs.iterrows()] + [NEW_LOC],
+           locations=[dict(id=r['Store Number'], name=r['name'], district=r.district, kind=r.kind) for _, r in locs.iterrows()] + [NEW_LOC] + EXTRA_LOCS,
            districts=DORDER, assets=json.loads(df[cols].to_json(orient='records')) + planned,
            flat=FLAT, fuelRate=FUEL27, lpRate=LP27, dcFuelRate=DC_FUEL, dcLpRate=DC_LP, mileRate=0.425,
            maintSeason=dict(company=season(ms)))
