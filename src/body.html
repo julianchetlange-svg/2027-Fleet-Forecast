@@ -175,9 +175,9 @@ const REM = new Set(['TERM', 'OUT']);
 const REM_LABEL = {TERM: 'Terminated (sold / lease returned)', OUT: 'Relocated out of McCoy\'s plan'};
 const locShort = id => id === 'TERM' ? 'Terminated' : id === 'OUT' ? 'Relocated out' : id;
 const ASSETS = DATA.assets; const AMAP = Object.fromEntries(ASSETS.map(a => [a.id, a])); const AIDX = Object.fromEntries(ASSETS.map((a, i) => [a.id, i]));
-const CATS_CH = ['Truck fuel','Forklift fuel','Maintenance','Depreciation','Lease','Registration & taxes','Geotab & Lytx','Flat rate','Mileage charge'];
-const CATS_OP = ['Truck fuel','Forklift fuel','Maintenance','Depreciation','Lease','Registration & taxes','Geotab & Lytx'];
-const FIXED = ['Maintenance', 'Depreciation', 'Lease', 'Registration & taxes', 'Geotab & Lytx'];
+const CATS_CH = ['Truck fuel','Forklift fuel','Maintenance','Depreciation','Lease','Registration & taxes','Geotab','Lytx','Flat rate','Mileage charge'];
+const CATS_OP = ['Truck fuel','Forklift fuel','Maintenance','Depreciation','Lease','Registration & taxes','Geotab','Lytx'];
+const FIXED = ['Maintenance', 'Depreciation', 'Lease', 'Registration & taxes', 'Geotab','Lytx'];
 const KIND_CHIP = {Store: 's', Central: 'c', Distribution: 'c', Millwork: 'c', Headquarters: 'c', 'Loaner pool': 'k'};
 const DEF = () => ({fuelRate: DATA.fuelRate.slice(), lpRate: DATA.lpRate.slice(), dcFuelRate: (DATA.dcFuelRate || DATA.fuelRate).slice(), dcLpRate: (DATA.dcLpRate || DATA.lpRate).slice(), mileRate: DATA.mileRate, maintTrend: 0, maintSeason: 'company', mileGrowth: 0, flat: Object.assign({}, DATA.flat)});
 const KEY = 'mccoys-fleet-2027.v1';
@@ -236,9 +236,9 @@ function run(assign) {
     for (let i = 0; i < 12; i++) {
       const tf = gal / 12 * (a.galW ? a.galW[i] : 1) * (a.dc ? S.p.dcFuelRate : S.p.fuelRate)[i], ff = lp / 12 * (a.lpW ? a.lpW[i] : 1) * (a.dc ? S.p.dcLpRate : S.p.lpRate)[i];
       const maint = a.maint * mt / 12 * season[i], dep = a.dep * a.depElig[i], lease = a.lease;
-      op['Truck fuel'][i] = tf; op['Forklift fuel'][i] = ff; op.Maintenance[i] = maint; op.Depreciation[i] = dep; op.Lease[i] = lease; op['Registration & taxes'][i] = a.reg; op['Geotab & Lytx'][i] = a.tel;
+      op['Truck fuel'][i] = tf; op['Forklift fuel'][i] = ff; op.Maintenance[i] = maint; op.Depreciation[i] = dep; op.Lease[i] = lease; op['Registration & taxes'][i] = a.reg; op.Geotab[i] = a.geo; op.Lytx[i] = a.lytx;
       ch['Truck fuel'][i] = tf; ch['Forklift fuel'][i] = ff;
-      if (actual) { ch.Maintenance[i] = maint; ch.Depreciation[i] = dep; ch.Lease[i] = lease; ch['Registration & taxes'][i] = a.reg; ch['Geotab & Lytx'][i] = a.tel; }
+      if (actual) { ch.Maintenance[i] = maint; ch.Depreciation[i] = dep; ch.Lease[i] = lease; ch['Registration & taxes'][i] = a.reg; ch.Geotab[i] = a.geo; ch.Lytx[i] = a.lytx; }
       else { ch['Flat rate'][i] = flat; if (a.cls === 'Truck') ch['Mileage charge'][i] = m / 12 * S.p.mileRate; }
     }
     return {a, loc, miles: m, gal, lp, ch, op, parts: [{loc, ch, op}]};

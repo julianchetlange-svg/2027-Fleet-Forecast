@@ -169,14 +169,14 @@ for _, r in a.iterrows():
                flat=FLAT.get(r['Asset Template Name']), maint=round(float(maint.get(aid, 0.0)), 2),
                miles=0.0, gal=0.0, lp=0.0, milesNote='', galNote='', fuelNote='')
     if aid in fee.index:
-        rec['reg'] = round(float(fee.loc[aid, FC[0]]) + float(fee.loc[aid, FC[1]]), 4); rec['tel'] = float(fee.loc[aid, FC[2]]) + float(fee.loc[aid, FC[3]])
+        rec['reg'] = round(float(fee.loc[aid, FC[0]]) + float(fee.loc[aid, FC[1]]), 4); rec['tel'] = float(fee.loc[aid, FC[2]]) + float(fee.loc[aid, FC[3]]); rec['geo'] = float(fee.loc[aid, FC[2]]); rec['lytx'] = float(fee.loc[aid, FC[3]])
         if aid in FEE_NA:   # fee file left this blank (no original value): same formulas, cost from depreciation x term
             pv, how = peer_cost(r['Asset Template Name'], r.isd.year)
             cost = pv if pv else depm * int(r.term); how = how if pv else 'depreciation x term'
             rec['reg'] = round(cost * (0.0005 if c in ('Truck', 'Trailer') else 0) + cost / 1500, 4)
             rec['feeNote'] = f'Registration/taxes estimated (no original value in fee file): cost ${cost:,.0f}, {how}'
     else:
-        rec['reg'] = 0.0; rec['tel'] = 0.0
+        rec['reg'] = 0.0; rec['tel'] = 0.0; rec['geo'] = 0.0; rec['lytx'] = 0.0
     if c == 'Truck':
         src = '692009' if aid == '626003' else aid
         if src in mpv.index:
@@ -286,7 +286,7 @@ df['flags'] = df.apply(flags, axis=1)
 FUEL27 = [5.198, 5.016, 4.834, 4.590, 4.455, 4.320, 4.185, 4.095, 4.005, 3.915, 3.825, 3.735]
 LP27 = [1.624, 1.637, 1.626, 1.610, 1.604, 1.585, 1.591, 1.578, 1.567, 1.540, 1.524, 1.525]
 cols = ['id', 'loc', 'type', 'cls', 'make', 'own', 'status', 'isd', 'term', 'dep', 'depElig', 'depSrc', 'lease', 'flat',
-        'maint', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'flags', 'galW', 'lpW', 'dc']
+        'maint', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'geo', 'lytx', 'flags', 'galW', 'lpW', 'dc']
 out = dict(generated='2026-10-30',
            locations=[dict(id=r['Store Number'], name=r['name'], district=r.district, kind=r.kind) for _, r in locs.iterrows()],
            districts=DORDER, assets=json.loads(df[cols].to_json(orient='records')),
