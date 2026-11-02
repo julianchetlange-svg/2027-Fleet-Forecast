@@ -287,9 +287,39 @@ FUEL27 = [5.198, 5.016, 4.834, 4.590, 4.455, 4.320, 4.185, 4.095, 4.005, 3.915, 
 LP27 = [1.624, 1.637, 1.626, 1.610, 1.604, 1.585, 1.591, 1.578, 1.567, 1.540, 1.524, 1.525]
 cols = ['id', 'loc', 'type', 'cls', 'make', 'own', 'status', 'isd', 'term', 'dep', 'depElig', 'depSrc', 'lease', 'flat',
         'maint', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'geo', 'lytx', 'flags', 'galW', 'lpW', 'dc']
+# ---------- planned new store: 122 Canyon Lake (Region 07), opens mid-June 2027, costs from July ----------
+NEW_LOC = dict(id='122', name='Canyon Lake', district='Region 07', kind='Store')
+NEW_FLEET = [("24' TA Flatbed", 2), ('Truck Mounted Forklift', 2), ('6K Yard Forklift', 3), ('8K Yard Forklift', 1), ('Pickup', 1)]
+START = 6   # July
+act = [0] * START + [1] * (12 - START)
+r7 = df['loc'].isin(locs.loc[(locs.district == 'Region 07') & (locs.kind == 'Store'), 'Store Number'])
+stores = df['loc'].isin(locs.loc[locs.kind == 'Store', 'Store Number'])
+isd = pd.to_datetime(df['isd'])
+def med(mask, col):
+    s = df.loc[mask, col]; s = s[s > 0]; return float(s.median()) if len(s) else 0.0
+planned = []
+for ty, n in NEW_FLEET:
+    same = df['type'] == ty; cls = df.loc[same, 'cls'].iloc[0]
+    use = (r7 & same) if (r7 & same & (df.miles > 0 if cls == 'Truck' else True)).sum() >= 2 else (stores & same)
+    newer = same & (isd >= '2024-01-01')
+    miles = med(use, 'miles') if cls == 'Truck' else 0.0
+    gpm = med(use, 'gpm') if cls == 'Truck' else 0.0
+    lp = med(use & (df.cls == 'Forklift'), 'lp') if cls == 'Forklift' else 0.0
+    dep = med(newer & (df.own == 'Owned'), 'dep'); maint = med(newer, 'maint') or med(same, 'maint')
+    reg = med(newer, 'reg'); geo = med(newer, 'geo') if cls == 'Truck' else 0.0; lytx = med(newer, 'lytx') if cls == 'Truck' else 0.0
+    term = int(df.loc[same, 'term'].iloc[0])
+    for k in range(n):
+        planned.append(dict(id=f'122-NEW-{len(planned) + 1:02d}', loc='122', type=ty, cls=cls, make='Planned', own='Owned', status='Planned',
+            isd='2027-07-01', term=term, dep=round(dep, 2), depElig=act, depSrc='Estimate: median of same-type units bought 2024 or later',
+            lease=0.0, flat=FLAT.get(ty), maint=round(maint, 2), miles=round(miles, 1), gal=round(miles * gpm, 1), gpm=gpm, lp=round(lp, 1),
+            reg=round(reg, 4), tel=geo + lytx, geo=geo, lytx=lytx, act=act, galW=None, lpW=None, dc=0,
+            flags=[f'Planned: 122 Canyon Lake opens mid-June 2027; costs start July. Miles, fuel and propane are the '
+                   + ('Region 07' if use is not None and (use & r7).any() else 'company store') + ' median for this type; depreciation, maintenance and fees are the median of same-type units bought 2024 or later.']))
+print('planned assets', len(planned), [(p['type'], p['miles'], p['gal'], p['lp'], p['dep'], p['maint'], p['reg']) for p in planned[::1]])
+
 out = dict(generated='2026-10-30',
-           locations=[dict(id=r['Store Number'], name=r['name'], district=r.district, kind=r.kind) for _, r in locs.iterrows()],
-           districts=DORDER, assets=json.loads(df[cols].to_json(orient='records')),
+           locations=[dict(id=r['Store Number'], name=r['name'], district=r.district, kind=r.kind) for _, r in locs.iterrows()] + [NEW_LOC],
+           districts=DORDER, assets=json.loads(df[cols].to_json(orient='records')) + planned,
            flat=FLAT, fuelRate=FUEL27, lpRate=LP27, dcFuelRate=DC_FUEL, dcLpRate=DC_LP, mileRate=0.425,
            maintSeason=dict(company=season(ms)))
 json.dump(out, open(OUT + 'data.json', 'w'), separators=(',', ':'))
