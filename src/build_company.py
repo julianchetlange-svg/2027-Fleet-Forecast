@@ -324,10 +324,10 @@ EXTRA_LOCS = []
 for pid, reg_name, dist in [('765', 'Region 5', 'Region 05'), ('768', 'Region 8', 'Region 08')]:
     if pid in set(df['loc']): continue
     EXTRA_LOCS.append(dict(id=pid, name=reg_name, district=dist, kind='Loaner pool'))
-    planned.append(dict(id=f'{pid}-FUEL', loc=pid, type='Loaner pool fuel (estimate)', cls='Truck', make='Estimate', own='Owned', status='Estimate',
+    planned.append(dict(id=f'{pid}-FUEL', loc=pid, type='Fuel-only account', cls='Truck', make='Estimate', own='Owned', status='Estimate',
         isd='2027-01-01', term=60, dep=0.0, depElig=[0] * 12, depSrc='', lease=0.0, flat=None, maint=0.0, miles=0.0, gal=round(POOL_EST, 1), gpm=0.0, lp=0.0,
         reg=0.0, tel=0.0, geo=0.0, lytx=0.0, galW=None, lpW=None, dc=0,
-        flags=[f'Fuel only: no {pid} assets on the roster, so fuel is the average of the other loaner pools ({POOL_EST:,.0f} gal/yr; pools {", ".join(sorted(pool_gal.index))}).']))
+        flags=[f'Fuel only: no {pid} assets on the roster; fuel is the {pid} card account actual (Nov 2025-Oct 2026).']))
 print('pool gal by pool', pool_gal.round().to_dict(), 'estimate', round(POOL_EST))
 
 out = dict(generated='2026-10-30',
@@ -335,22 +335,51 @@ out = dict(generated='2026-10-30',
            districts=DORDER, assets=json.loads(df[cols].to_json(orient='records')) + planned,
            flat=FLAT, fuelRate=FUEL27, lpRate=LP27, dcFuelRate=DC_FUEL, dcLpRate=DC_LP, mileRate=0.425,
            maintSeason=dict(company=season(ms)))
-# ---------- calibrate to the company 2027 fuel forecast (fuel card + onsite tanks; Fuel Operations report, Oct 26, 2026) ----------
-# Every asset's gallons are scaled by month so the company total matches the plan; Distribution is priced at the blended rate too (user, Nov 4).
-PLAN_GAL = [166620, 166695, 189658, 188569, 181111, 169441, 185295, 182521, 181460, 195263, 195263, 195263]
+# ---------- fuel = actual gallons by location, Nov 2025 - Oct 2026 (fuel card accounts + onsite tanks; user, Nov 4) ----------
+# Each location's trucks are scaled so its monthly gallons equal its row (fuel stays with the card account that bought it).
+# Tank rows go to 353 / 356 / 359 (359 includes 489). 068 is closed and dropped. Accounts with no fueled truck get a fuel-only line.
+# All gallons are priced at the blended 2027 rate.
 out['dcFuelRate'] = FUEL27[:]
-mon = lambda a, i: a['gal'] / 12 * (a['galW'][i] if a.get('galW') else 1) * (a['act'][i] if a.get('act') else 1)
-ours = [sum(mon(a, i) for a in out['assets']) for i in range(12)]
-FUEL_F = [PLAN_GAL[i] / ours[i] for i in range(12)]
+fl = pd.read_excel(INPUTS + 'fuel_by_location.xlsx', sheet_name='Gallons', header=2, dtype={'Location': str})
+fl = fl[fl['Source'].isin(['Fuel card', 'On-site tank'])].copy()
+fl['code'] = fl['Location'].str.extract(r'\((\d+)\)')[0].fillna(fl['Location']).str.strip()
+MCOLS = [c for c in fl.columns if str(c).endswith('2027') and len(str(c)) == 8]
+GROUP = {'489': '359'}
+tgt = {}
+for _, r in fl.iterrows():
+    c = GROUP.get(r.code, r.code)
+    if c == '068': continue
+    tgt[c] = [x + float(v) for x, v in zip(tgt.get(c, [0.0] * 12), r[MCOLS])]
+grp = lambda l: GROUP.get(l, l)
+known = {l['id'] for l in out['locations']}
+OTHER = []
+for c, m in tgt.items():
+    has = [a for a in out['assets'] if grp(a['loc']) == c and a['cls'] == 'Truck' and a['gal'] > 0 and not a.get('act')]
+    if has: continue
+    if c not in known:
+        OTHER.append(c); out['locations'].append(dict(id=c, name='Fuel account ' + c, district='Other fuel accounts', kind='Fuel account'))
+    out['assets'] = [a for a in out['assets'] if a['id'] != f'{c}-FUEL']
+    out['assets'].append(dict(id=f'{c}-FUEL', loc=c, type='Fuel-only account', cls='Truck', make='Fuel account', own='Owned', status='Fuel only',
+        isd='2027-01-01', term=60, dep=0.0, depElig=[0] * 12, depSrc='', lease=0.0, flat=None, maint=0.0, miles=0.0, gal=1.0, gpm=0.0, lp=0.0,
+        reg=0.0, tel=0.0, geo=0.0, lytx=0.0, galW=None, lpW=None, dc=0,
+        flags=[f'Fuel only: card account {c} has actual fuel (Nov 2025-Oct 2026) but no trucks on the roster.']))
+if OTHER: out['districts'] = out['districts'] + ['Other fuel accounts']
+before = {}; after = {}
 for a in out['assets']:
-    if not a['gal']: continue
-    w = [(a['galW'][i] if a.get('galW') else 1) * FUEL_F[i] for i in range(12)]
-    act = a.get('act') or [1] * 12
-    mw = sum(w[i] * act[i] for i in range(12)) / sum(act)          # average over active months keeps the annual-rate meaning
-    old = a['gal']; a['gal'] = round(old * mw, 1); a['galW'] = [x / mw for x in w]
-    if a.get('gpm'): a['gpm'] = a['gpm'] * a['gal'] / old
-out['fuelCalib'] = dict(planGal=PLAN_GAL, factor=[round(f, 4) for f in FUEL_F], base=[round(x) for x in ours])
-print('fuel calibration factors', [round(f, 3) for f in FUEL_F], 'base', round(sum(ours)), 'plan', sum(PLAN_GAL))
+    if a['cls'] != 'Truck' or a.get('act'): continue
+    c = grp(a['loc']); before[c] = before.get(c, 0) + a['gal']
+for a in out['assets']:
+    if a['cls'] != 'Truck' or a.get('act') or not a['gal']: continue
+    c = grp(a['loc']); m = tgt.get(c, [0.0] * 12); share = a['gal'] / before[c]
+    old = a['gal']; mg = [x * share for x in m]; tot = sum(mg)
+    a['gal'] = round(tot, 1); a['galW'] = [x * 12 / tot for x in mg] if tot else None
+    if a.get('miles'): a['gpm'] = tot / a['miles']
+    after[c] = after.get(c, 0) + tot
+    if not tot: a['flags'] = a['flags'] + [f'No fuel: no {c} account or tank row in the actual fuel file (Nov 2025-Oct 2026)']
+FUEL_SRC = dict(total=round(sum(sum(v) for v in tgt.values())), months=[round(sum(v[i] for v in tgt.values())) for i in range(12)])
+out['fuelSrc'] = FUEL_SRC
+print('fuel by location: target', FUEL_SRC['total'], 'assigned', round(sum(after.values())), 'other accounts', OTHER,
+      'zeroed', sorted(c for c in before if c not in tgt and before[c] > 0))
 json.dump(out, open(OUT + 'data.json', 'w'), separators=(',', ':'))
 
 # ---------- checks ----------
