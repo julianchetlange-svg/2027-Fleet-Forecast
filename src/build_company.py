@@ -335,6 +335,22 @@ out = dict(generated='2026-10-30',
            districts=DORDER, assets=json.loads(df[cols].to_json(orient='records')) + planned,
            flat=FLAT, fuelRate=FUEL27, lpRate=LP27, dcFuelRate=DC_FUEL, dcLpRate=DC_LP, mileRate=0.425,
            maintSeason=dict(company=season(ms)))
+# ---------- calibrate to the company 2027 fuel forecast (fuel card + onsite tanks; Fuel Operations report, Oct 26, 2026) ----------
+# Every asset's gallons are scaled by month so the company total matches the plan; Distribution is priced at the blended rate too (user, Nov 4).
+PLAN_GAL = [166620, 166695, 189658, 188569, 181111, 169441, 185295, 182521, 181460, 195263, 195263, 195263]
+out['dcFuelRate'] = FUEL27[:]
+mon = lambda a, i: a['gal'] / 12 * (a['galW'][i] if a.get('galW') else 1) * (a['act'][i] if a.get('act') else 1)
+ours = [sum(mon(a, i) for a in out['assets']) for i in range(12)]
+FUEL_F = [PLAN_GAL[i] / ours[i] for i in range(12)]
+for a in out['assets']:
+    if not a['gal']: continue
+    w = [(a['galW'][i] if a.get('galW') else 1) * FUEL_F[i] for i in range(12)]
+    act = a.get('act') or [1] * 12
+    mw = sum(w[i] * act[i] for i in range(12)) / sum(act)          # average over active months keeps the annual-rate meaning
+    old = a['gal']; a['gal'] = round(old * mw, 1); a['galW'] = [x / mw for x in w]
+    if a.get('gpm'): a['gpm'] = a['gpm'] * a['gal'] / old
+out['fuelCalib'] = dict(planGal=PLAN_GAL, factor=[round(f, 4) for f in FUEL_F], base=[round(x) for x in ours])
+print('fuel calibration factors', [round(f, 3) for f in FUEL_F], 'base', round(sum(ours)), 'plan', sum(PLAN_GAL))
 json.dump(out, open(OUT + 'data.json', 'w'), separators=(',', ':'))
 
 # ---------- checks ----------
