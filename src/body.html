@@ -18,6 +18,7 @@
   <div class="wrap" id="tabs">
     <a href="#overview" data-v="overview">Overview</a>
     <a href="#reassign" data-v="reassign">Reassign assets</a>
+    <a href="#repl" data-v="repl">Replacements &amp; sales</a>
     <a href="#detail" data-v="detail">Forecast detail</a>
     <a href="#assumptions" data-v="assumptions">Assumptions &amp; data</a>
   </div>
@@ -110,6 +111,31 @@
   </div>
 </section>
 
+<!-- REPLACEMENTS -->
+<section class="view" id="v-repl" hidden>
+  <div class="kpis" id="rpKpis"></div>
+  <div class="panel">
+    <div class="phead"><div><h2>2027 replacements and sale proceeds</h2><p class="lede" id="rpLede"></p></div>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:600;font-size:13px"><input type="checkbox" id="rpOn"> Include replacements in the forecast</label></div>
+    <ul class="rules">
+      <li><b>Old unit.</b> Depreciation, lease and registration &amp; taxes run through the delivery month and stop the month after. Fuel and maintenance carry over to the new unit.</li>
+      <li><b>New unit.</b> Owned, straight-line from the delivered cost: 60 months for trucks, 84 for forklifts and TMFLs, starting in the delivery month (month 1). Registration &amp; taxes are recalculated from the new cost (taxes 0.0667% a month; registration 0.05% for trucks).</li>
+      <li><b>Sale.</b> The old unit sells the month after delivery. Price is the median of 2025–2026 healthy sales (damaged units excluded) for the most specific match with at least 3 sales: same type, brand and age; then type and brand; then type and age; then type.</li>
+      <li><b>Gain or loss</b> = expected price − book value at the sale month. It is a one-time item and is not included in location charges or actual cost. Leased units go back to the lessor, so they have no sale.</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <div class="phead"><div><h2>By month</h2><p class="lede">Delivery month drives capital and depreciation; sale month (one month later) drives proceeds and gain or loss.</p></div><button class="btn small" type="button" id="copyRpM">Copy table as CSV</button></div>
+    <div class="tbl-wrap"><table id="tRpM"></table></div>
+  </div>
+  <div class="panel">
+    <div class="phead"><div><h2>By unit</h2><p class="lede" id="rpUnitLede">Change a delivery month or delivered cost to update everything. Changes are saved in this browser and go out with Export to Excel.</p></div>
+      <span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" type="button" id="rpReset">Reset replacement edits</button><button class="btn small" type="button" id="copyRpU">Copy table as CSV</button></span></div>
+    <div class="filters"><label>Fleet<select id="rpFleet"></select></label><label>District<select id="rpDist"></select></label><label>Search<input type="search" id="rpQ" placeholder="Unit # or type"></label></div>
+    <div class="tbl-wrap" style="max-height:720px"><table id="tRpU"></table></div>
+  </div>
+</section>
+
 <!-- ASSUMPTIONS -->
 <section class="view" id="v-assumptions" hidden>
   <div class="panel">
@@ -182,8 +208,8 @@ const FIXED = ['Maintenance', 'Depreciation', 'Lease', 'Registration & taxes', '
 const KIND_CHIP = {Store: 's', Central: 'c', Distribution: 'c', Millwork: 'c', Headquarters: 'c', 'Loaner pool': 'k', 'Fuel account': 'k'};
 const DEF = () => ({fuelRate: DATA.fuelRate.slice(), lpRate: DATA.lpRate.slice(), dcFuelRate: (DATA.dcFuelRate || DATA.fuelRate).slice(), dcLpRate: (DATA.dcLpRate || DATA.lpRate).slice(), mileRate: DATA.mileRate, maintTrend: 0, maintSeason: 'company', mileGrowth: 0, flat: Object.assign({}, DATA.flat)});
 const KEY = 'mccoys-fleet-2027.v1';
-let S = {assign: {}, eff: {}, p: DEF(), view: 'charge', dcase: 'scen', exp: {}, expO: {}};
-function loadState(o) { S = Object.assign(S, o); S.eff = o.eff || {}; S.exp = o.exp || {}; S.expO = o.expO || {}; S.p = Object.assign(DEF(), o.p || {}); if (!DATA.maintSeason[S.p.maintSeason] && S.p.maintSeason !== 'flat') S.p.maintSeason = 'company'; }
+let S = {assign: {}, eff: {}, p: DEF(), view: 'charge', dcase: 'scen', exp: {}, expO: {}, rp: {}, rpOn: true};
+function loadState(o) { S = Object.assign(S, o); S.eff = o.eff || {}; S.exp = o.exp || {}; S.expO = o.expO || {}; S.rp = o.rp || {}; S.rpOn = o.rpOn !== false; S.p = Object.assign(DEF(), o.p || {}); if (!DATA.maintSeason[S.p.maintSeason] && S.p.maintSeason !== 'flat') S.p.maintSeason = 'company'; }
 try { const raw = localStorage.getItem(KEY); if (raw) loadState(JSON.parse(raw)); } catch (e) {}
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 
@@ -199,6 +225,11 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', 
 function el(tag, attrs, ...kids) { const e = document.createElement(tag); if (attrs) for (const k in attrs) { if (k === 'class') e.className = attrs[k]; else if (k === 'text') e.textContent = attrs[k]; else e.setAttribute(k, attrs[k]); } for (const k of kids) if (k != null) e.append(k); return e; }
 const sum12 = arr => arr.reduce((s, v) => s + v, 0);
 const zero12 = () => new Array(12).fill(0);
+/* ---------- 2027 replacements ---------- */
+const REPL = DATA.repl || []; const RMAP = Object.fromEntries(REPL.map(r => [r.id, r]));
+function rpOf(id) { const r = RMAP[id]; if (!r) return null; const o = S.rp[id] || {}; const m = o.m != null ? o.m : r.m, cost = o.cost != null ? o.cost : r.cost;
+  const a = AMAP[id]; return Object.assign({}, r, {m, cost, newDep: cost / r.term, newReg: cost / 1500 + (a.cls === 'Truck' ? cost * 0.0005 : 0), price: r.leased ? 0 : r.px[m], basis: r.leased ? 'Leased: returned to lessor' : r.basis[m]}); }
+const rpActive = id => S.rpOn && RMAP[id] ? rpOf(id) : null;
 
 /* ---------- model ---------- */
 function run(assign) {
@@ -233,14 +264,15 @@ function run(assign) {
     let m = 0, gal = 0;
     if (a.cls === 'Truck') { m = miles[a.id] || 0; const extra = m - a.miles * g; gal = Math.max(0, a.gal * g + extra * (extra > 0 && absorbGpm[a.id] != null ? absorbGpm[a.id] : a.gpm)); }
     const lp = a.cls === 'Forklift' ? a.lp + (lpPool[loc] && fkAt[loc] ? lpPool[loc] / fkAt[loc] : 0) : 0;
-    const flat = S.p.flat[a.type] || 0;
+    const flat = S.p.flat[a.type] || 0; const rp = rpActive(a.id);
     for (let i = 0; i < 12; i++) {
       if (a.act && !a.act[i]) continue;   // planned asset not yet in service
       const tf = gal / 12 * (a.galW ? a.galW[i] : 1) * (a.dc ? S.p.dcFuelRate : S.p.fuelRate)[i], ff = lp / 12 * (a.lpW ? a.lpW[i] : 1) * (a.dc ? S.p.dcLpRate : S.p.lpRate)[i];
-      const maint = a.maint * mt / 12 * season[i], dep = a.dep * a.depElig[i], lease = a.lease;
-      op['Truck fuel'][i] = tf; op['Forklift fuel'][i] = ff; op.Maintenance[i] = maint; op.Depreciation[i] = dep; op.Lease[i] = lease; op['Registration & taxes'][i] = a.reg; op.Geotab[i] = a.geo; op.Lytx[i] = a.lytx;
+      const oldOn = !rp || i <= rp.m;   // old unit's cost runs through the delivery month
+      const maint = a.maint * mt / 12 * season[i], dep = (oldOn ? a.dep * a.depElig[i] : 0) + (rp && i >= rp.m ? rp.newDep : 0), lease = oldOn ? a.lease : 0, reg = oldOn ? a.reg : rp.newReg;
+      op['Truck fuel'][i] = tf; op['Forklift fuel'][i] = ff; op.Maintenance[i] = maint; op.Depreciation[i] = dep; op.Lease[i] = lease; op['Registration & taxes'][i] = reg; op.Geotab[i] = a.geo; op.Lytx[i] = a.lytx;
       ch['Truck fuel'][i] = tf; ch['Forklift fuel'][i] = ff;
-      if (actual) { ch.Maintenance[i] = maint; ch.Depreciation[i] = dep; ch.Lease[i] = lease; ch['Registration & taxes'][i] = a.reg; ch.Geotab[i] = a.geo; ch.Lytx[i] = a.lytx; }
+      if (actual) { ch.Maintenance[i] = maint; ch.Depreciation[i] = dep; ch.Lease[i] = lease; ch['Registration & taxes'][i] = reg; ch.Geotab[i] = a.geo; ch.Lytx[i] = a.lytx; }
       else { ch['Flat rate'][i] = flat; if (a.cls === 'Truck') ch['Mileage charge'][i] = m / 12 * S.p.mileRate; }
     }
     return {a, loc, miles: m, gal, lp, ch, op, parts: [{loc, ch, op}]};
@@ -540,8 +572,63 @@ function renderAssumptions() {
   document.getElementById('mScope').textContent = `${f0.format(ASSETS.length)} assets at ${LOCS.length} locations.`;
 }
 function syncSegs() { document.querySelectorAll('[data-seg]').forEach(g => { const k = g.dataset.seg; g.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(S[k] === b.dataset.val))); }); }
+function rpCalc(id) {   // per-unit 2027 effect of one replacement (independent of the include toggle)
+  const r = rpOf(id), a = AMAP[id]; let removed = 0, added = 0, regD = 0;
+  for (let i = 0; i < 12; i++) { if (i > r.m) { removed += a.dep * a.depElig[i] + a.lease; regD += r.newReg - a.reg; } if (i >= r.m) added += r.newDep; }
+  const sm = r.m + 1, book = r.leased ? 0 : remainingBook(a, Math.min(sm, 11)) - (sm > 11 ? a.dep : 0);
+  return {r, a, removed, added, regD, net: added - removed + regD, sm, book: Math.max(0, book), gain: r.leased ? 0 : r.price - Math.max(0, book)};
+}
+const smLabel = sm => sm > 11 ? 'Jan 2028' : MONTHS[sm];
+function renderRepl() {
+  const all = REPL.map(r => rpCalc(r.id)); const own = all.filter(x => !x.r.leased);
+  const S_ = f => all.reduce((s, x) => s + f(x), 0);
+  const capex = S_(x => x.r.cost), proceeds = own.reduce((s, x) => s + x.r.price, 0), book = own.reduce((s, x) => s + x.book, 0), gain = proceeds - book;
+  const k = document.getElementById('rpKpis'); k.innerHTML = '';
+  k.append(kpi('lead', 'Units replaced in 2027', f0.format(all.length), `${own.length} owned (sold), ${all.length - own.length} leased (returned)`));
+  k.append(kpi('', 'New unit capital', usdK(capex), 'Delivered cost of the replacements'));
+  k.append(kpi('', 'Expected sale proceeds', usdK(proceeds), `${own.length} owned units, sold the month after delivery`));
+  k.append(kpi('', 'Gain or loss on sale', `<span class="${gain >= 0 ? 'down' : 'up'}">${sgnK(gain)}</span>`, `Proceeds less ${usdK(book)} book value at sale`));
+  const rem = S_(x => x.removed), add = S_(x => x.added), rg = S_(x => x.regD);
+  k.append(kpi('', '2027 expense change', `<span class="${dcls(add - rem + rg)}">${sgnK(add - rem + rg)}</span>`, `New depreciation +${usdK(add)}; old depreciation & lease −${usdK(rem)}; reg & taxes ${sgnK(rg)}`));
+  document.getElementById('rpOn').checked = S.rpOn;
+  document.getElementById('rpLede').innerHTML = `${all.length} units from the 2027 replacement list` + (DATA.replMissing && DATA.replMissing.length ? `; ${DATA.replMissing.join(' and ')} ${DATA.replMissing.length > 1 ? 'are' : 'is'} not on the current roster and left out` : '') + (S.rpOn ? '. The forecast includes these changes.' : '. <b>The forecast currently excludes these changes.</b>');
+  // monthly
+  const rows = {'Units delivered': zero12(), 'New unit capital': zero12(), 'Old depreciation & lease removed': zero12(), 'New unit depreciation': zero12(), 'Registration & taxes change': zero12(), 'Net expense change': zero12(), 'Units sold': zero12(), 'Sale proceeds': zero12(), 'Book value at sale': zero12(), 'Gain or loss': zero12()};
+  let next = {n: 0, p: 0, b: 0};
+  for (const x of all) { const r = x.r, a = x.a; rows['Units delivered'][r.m] += 1; rows['New unit capital'][r.m] += r.cost;
+    for (let i = 0; i < 12; i++) { if (i > r.m) { rows['Old depreciation & lease removed'][i] -= a.dep * a.depElig[i] + a.lease; rows['Registration & taxes change'][i] += r.newReg - a.reg; } if (i >= r.m) rows['New unit depreciation'][i] += r.newDep; }
+    if (!r.leased) { if (x.sm > 11) { next.n++; next.p += r.price; next.b += x.book; } else { rows['Units sold'][x.sm] += 1; rows['Sale proceeds'][x.sm] += r.price; rows['Book value at sale'][x.sm] += x.book; rows['Gain or loss'][x.sm] += r.price - x.book; } } }
+  for (let i = 0; i < 12; i++) rows['Net expense change'][i] = rows['Old depreciation & lease removed'][i] + rows['New unit depreciation'][i] + rows['Registration & taxes change'][i];
+  const tm = document.getElementById('tRpM'); tm.innerHTML = `<thead><tr><th>Line</th>${MONTHS.map(m => `<th class="n">${m}</th>`).join('')}<th class="n">2027</th></tr></thead>`;
+  const tb = el('tbody'); const csv = [['Line', ...MONTHS, '2027']];
+  for (const [nm, arr] of Object.entries(rows)) { const cnt = nm.startsWith('Units'); const fmt = v => cnt ? (v ? f0.format(v) : '') : (Math.abs(v) < 0.5 ? '' : usd(v));
+    const tr = el('tr', {class: ['Net expense change', 'Gain or loss'].includes(nm) ? 'tot' : ''}); tr.innerHTML = `<td>${nm}</td>${arr.map(v => `<td class="n ${nm === 'Gain or loss' || nm === 'Net expense change' ? dcls(nm === 'Gain or loss' ? -v : v) : ''}">${fmt(v)}</td>`).join('')}<td class="n"><b>${fmt(sum12(arr))}</b></td>`; tb.append(tr); csv.push([nm, ...arr.map(v => cnt ? v : r2(v)), cnt ? sum12(arr) : r2(sum12(arr))]); }
+  tm.append(tb); tm._csv = csv;
+  // units
+  const fl = document.getElementById('rpFleet'), ds = document.getElementById('rpDist');
+  if (!fl.options.length) { fl.append(el('option', {value: '', text: 'All fleets'})); [...new Set(REPL.map(r => r.fleet))].forEach(f => fl.append(el('option', {value: f, text: f}))); fillDistSelect(ds); }
+  const q = document.getElementById('rpQ').value.trim().toLowerCase();
+  const list = all.filter(x => (!fl.value || x.r.fleet === fl.value) && (!ds.value || LOC[x.a.loc].district === ds.value) && (!q || x.a.id.includes(q) || x.a.type.toLowerCase().includes(q)));
+  const tu = document.getElementById('tRpU');
+  tu.innerHTML = `<thead><tr><th>Unit</th><th>Location</th><th>Brand, year</th><th>Current measure</th><th>Delivery month</th><th class="n">Delivered cost</th><th class="n">Old dep. + lease / mo</th><th class="n">New dep. / mo</th><th class="n">2027 expense change</th><th>Sale month</th><th class="n">Expected price</th><th>Price based on</th><th class="n">Book value at sale</th><th class="n">Gain or loss</th></tr></thead>`;
+  const tb2 = el('tbody'); const csv2 = [['Unit', 'Type', 'Fleet', 'Location', 'District', 'Owned', 'Brand', 'Year', 'Current measure', 'Status', 'Delivery month', 'Delivered cost', 'Old dep + lease per month', 'New dep per month', '2027 expense change', 'Sale month', 'Expected price', 'Price based on', 'Book value at sale', 'Gain or loss', 'Notes']];
+  for (const x of list) { const r = x.r, a = x.a, ed = S.rp[a.id] && Object.keys(S.rp[a.id]).length;
+    const tr = el('tr', {class: ed ? 'moved' : ''});
+    const oldMo = a.dep * a.depElig[Math.min(r.m + 1, 11)] + a.lease;
+    tr.innerHTML = `<td><b>${esc(a.id)}</b><span class="sub2">${esc(a.type)}</span></td><td>${esc(a.loc)}<span class="sub2">${esc(LOC[a.loc].district)}</span></td><td>${esc(r.oem)} ${r.year}<span class="sub2">${r.leased ? 'Leased' : 'Owned'}</span></td><td>${esc(r.measure)}<span class="sub2">${esc(r.lc)} of ${esc(r.threshold)}</span></td>`;
+    const tdM = el('td'); const sel = el('select', {'aria-label': 'Delivery month for ' + a.id}); MONTHS.forEach((mn, i) => sel.append(el('option', {value: i, text: mn}))); sel.value = r.m;
+    sel.addEventListener('change', () => { S.rp[a.id] = Object.assign({}, S.rp[a.id], {m: +sel.value}); if (S.rp[a.id].m === RMAP[a.id].m) delete S.rp[a.id].m; changed('Delivery month updated'); }); tdM.append(sel); tr.append(tdM);
+    const tdC = el('td', {class: 'n'}); const inp = el('input', {type: 'number', step: 1000, value: r.cost, 'aria-label': 'Delivered cost for ' + a.id}); inp.style.width = '92px';
+    inp.addEventListener('change', () => { const v = parseFloat(inp.value); if (isNaN(v)) return; S.rp[a.id] = Object.assign({}, S.rp[a.id], {cost: v}); if (v === RMAP[a.id].cost) delete S.rp[a.id].cost; changed('Delivered cost updated'); }); tdC.append(inp); tr.append(tdC);
+    const rest = el('template'); rest.innerHTML = `<td class="n">${oldMo ? usd(oldMo) : '$0'}</td><td class="n">${usd(r.newDep)}</td><td class="n ${dcls(x.net)}">${sgn(x.net)}</td><td>${smLabel(x.sm)}</td><td class="n">${r.leased ? '—' : usd(r.price)}</td><td><span class="sub2" style="display:inline">${esc(r.basis)}</span>${r.note && !r.leased ? `<span class="mflag amber">${esc(r.note)}</span>` : ''}</td><td class="n">${r.leased ? '—' : usd(x.book)}</td><td class="n ${r.leased ? '' : dcls(-x.gain)}">${r.leased ? '—' : sgn(x.gain)}</td>`;
+    tr.append(rest.content); tb2.append(tr);
+    csv2.push([a.id, a.type, r.fleet, a.loc, LOC[a.loc].district, r.leased ? 'Leased' : 'Owned', r.oem, r.year, r.measure, r.status, MONTHS[r.m], r.cost, r2(oldMo), r2(r.newDep), r2(x.net), smLabel(x.sm), r.leased ? null : r.price, r.basis, r.leased ? null : r2(x.book), r.leased ? null : r2(x.gain), r.note]); }
+  if (!list.length) tb2.innerHTML = '<tr><td colspan="14" class="empty">No units match these filters.</td></tr>';
+  tu.append(tb2); tu._csv = csv2;
+  document.getElementById('rpReset').disabled = !Object.values(S.rp).some(o => o && Object.keys(o).length);
+}
 let current = 'overview';
-function renderAll() { recompute(); renderHeader(); renderXbars(); syncSegs(); renderOverview(); renderMoves(); renderAssets(); renderDetail(); renderAssumptions(); }
+function renderAll() { recompute(); renderHeader(); renderXbars(); syncSegs(); renderOverview(); renderMoves(); renderAssets(); renderRepl(); renderDetail(); renderAssumptions(); }
 let toastT; function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 1800); }
 function changed(msg) { S.lastChange = Date.now(); save(); renderAll(); if (msg) toast(msg); }
 const isDirty = () => !!S.lastChange && (!S.lastExport || S.lastChange > S.lastExport);
@@ -575,6 +662,12 @@ document.getElementById('btnCopyScen').addEventListener('click', () => {
 document.getElementById('btnResetA').addEventListener('click', () => { S.p = DEF(); ['gFuel', 'gLp', 'gDcFuel', 'gDcLp', 'tFlat'].forEach(id => document.getElementById(id).innerHTML = ''); changed('Default inputs restored', true); });
 [['iGrowth', 'mileGrowth'], ['iMaint', 'maintTrend'], ['iMile', 'mileRate']].forEach(([id, k]) => document.getElementById(id).addEventListener('change', e => { const x = parseFloat(e.target.value); if (!isNaN(x)) { S.p[k] = x; changed('Input updated', true); } }));
 document.getElementById('iSeason').addEventListener('change', e => { S.p.maintSeason = e.target.value; changed('Maintenance timing updated', true); });
+document.getElementById('rpOn').addEventListener('change', e => { S.rpOn = e.target.checked; changed(S.rpOn ? 'Replacements included in the forecast' : 'Replacements excluded from the forecast'); });
+document.getElementById('rpReset').addEventListener('click', () => { S.rp = {}; changed('Replacement edits cleared'); });
+['rpFleet', 'rpDist'].forEach(id => document.getElementById(id).addEventListener('change', renderRepl));
+document.getElementById('rpQ').addEventListener('input', renderRepl);
+document.getElementById('copyRpM').addEventListener('click', () => copyCsv('tRpM'));
+document.getElementById('copyRpU').addEventListener('click', () => copyCsv('tRpU'));
 const fDist = document.getElementById('fDist'), fLoc = document.getElementById('fLoc'), aDist = document.getElementById('aDist'), aLoc = document.getElementById('aLoc');
 fillDistSelect(fDist); fillLocSelect(fLoc, ''); fillDistSelect(aDist); fillLocSelect(aLoc, '');
 fDist.addEventListener('change', () => { fillLocSelect(fLoc, fDist.value); assetPage = 0; renderAssets(); });
@@ -630,6 +723,9 @@ function exportExcel() {
   SCEN.rows.forEach((rs, k) => { const rb = BASE.rows[k], a = rs.a; const b = assetTotal(rb, 'charge'), s = assetTotal(rs, 'charge'), ob = assetTotal(rb, 'op'), os = assetTotal(rs, 'op');
     as.push([a.id, a.type, a.cls, a.own, LOC[a.loc].district, a.loc, locShort(rs.loc), a.cls === 'Truck' ? Math.round(rb.miles) : null, a.cls === 'Truck' ? Math.round(rs.miles) : null, ...CATS_CH.map(c => r2(sum12(rs.ch[c]))), r2(b), r2(s), r2(s - b), r2(ob), r2(os), r2(os - ob), a.flags.join('; ')]); });
   const mcols = []; for (let c = 9; c < 9 + CATS_CH.length + 6; c++) mcols.push(c);
+  renderRepl(); const ru = document.getElementById('tRpU')._csv || []; const rpAll = [ru[0], ...REPL.map(r => { const x = rpCalc(r.id), q = x.r, a = x.a; return [a.id, a.type, q.fleet, a.loc, LOC[a.loc].district, q.leased ? 'Leased' : 'Owned', q.oem, q.year, q.measure, q.status, MONTHS[q.m], q.cost, r2(a.dep * a.depElig[Math.min(q.m + 1, 11)] + a.lease), r2(q.newDep), r2(x.net), smLabel(x.sm), q.leased ? null : q.price, q.basis, q.leased ? null : r2(x.book), q.leased ? null : r2(x.gain), q.note]; })];
+  rpAll.splice(1, 0); rpAll.push([]); rpAll.push(['Included in forecast', S.rpOn ? 'Yes' : 'No']);
+  XLSX.utils.book_append_sheet(wb, mkSheet(rpAll, [11, 12, 13, 14, 16, 18, 19], [10, 24, 11, 8, 12, 8, 12, 6, 14, 10, 10, 13, 14, 13, 14, 10, 13, 30, 14, 13, 40]), 'Replacements');
   XLSX.utils.book_append_sheet(wb, mkSheet(as, mcols, [10, 24, 9, 8, 13, 10, 12, 10, 10, ...CATS_CH.map(() => 13), 14, 14, 13, 14, 14, 13, 50]), 'Assets');
   const mo = [['View', 'District', 'Location', 'Case', ...MONTHS, '2027']];
   for (const [view, key] of [['Location charges', 'ch'], ['Operating cost', 'op']]) for (const d of DISTS) for (const l of LOCS_BY_D[d]) {
@@ -665,6 +761,8 @@ function importExcel(file) {
       if (wi) { const p = DEF(); XLSX.utils.sheet_to_json(wi, {defval: ''}).forEach(r => { const k = String(r['Key']); if (k === 'maintSeason') { const sv2 = String(r['Value']).trim(); if (['company', 'flat'].includes(sv2)) p.maintSeason = sv2; return; } const v = parseFloat(r['Value']); if (isNaN(v)) return;
         const mk = k.split('.')[0]; if (['fuelRate', 'lpRate', 'dcFuelRate', 'dcLpRate'].includes(mk)) p[mk][+k.split('.')[1]] = v; else if (k.startsWith('flat.')) p.flat[k.slice(5)] = v; else if (k in p) p[k] = v; });
         S.p = p; ['gFuel', 'gLp', 'gDcFuel', 'gDcLp', 'tFlat'].forEach(id => document.getElementById(id).innerHTML = ''); }
+      const wr = wb.Sheets['Replacements']; if (wr) { const rp = {}; let on = true; XLSX.utils.sheet_to_json(wr, {defval: ''}).forEach(r => { const id = String(r['Unit'] || '').trim(); if (id === 'Included in forecast') { on = String(r['Type']).trim().toLowerCase() !== 'no'; return; } if (!RMAP[id]) return;
+        const o = {}; const mi = MONTHS.indexOf(String(r['Delivery month'] || '').trim().slice(0, 3)); if (mi >= 0 && mi !== RMAP[id].m) o.m = mi; const c = parseFloat(r['Delivered cost']); if (!isNaN(c) && c !== RMAP[id].cost) o.cost = c; if (Object.keys(o).length) rp[id] = o; }); S.rp = rp; S.rpOn = on; }
       S.assign = assign; S.eff = eff;
       changed(`Loaded ${Object.keys(assign).length} changes from ${file.name}` + (skipped.length ? ` (skipped ${skipped.length}: ${skipped.slice(0, 5).join(', ')})` : ''), true);
     } catch (e) { toast('Could not read that file. Use a workbook exported from this page.'); }
@@ -676,7 +774,7 @@ document.getElementById('btnExport2').addEventListener('click', exportExcel);
 document.getElementById('btnImport').addEventListener('click', () => document.getElementById('fileImport').click());
 document.getElementById('fileImport').addEventListener('change', e => { const f = e.target.files[0]; if (f) importExcel(f); e.target.value = ''; });
 
-const VIEWS = ['overview', 'reassign', 'detail', 'assumptions'];
+const VIEWS = ['overview', 'reassign', 'repl', 'detail', 'assumptions'];
 function route() { const h = location.hash.replace('#', ''); const v = VIEWS.includes(h) ? h : 'overview'; current = v; VIEWS.forEach(x => document.getElementById('v-' + x).hidden = x !== v); document.querySelectorAll('#tabs a').forEach(a => { if (a.dataset.v === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }); if (v === 'overview') renderOverview(); }
 addEventListener('hashchange', route);
 const setTabsH = () => { const n = document.querySelector('.tabs'); if (n) document.documentElement.style.setProperty('--tabsH', n.offsetHeight + 'px'); };

@@ -380,6 +380,12 @@ FUEL_SRC = dict(total=round(sum(sum(v) for v in tgt.values())), months=[round(su
 out['fuelSrc'] = FUEL_SRC
 print('fuel by location: target', FUEL_SRC['total'], 'assigned', round(sum(after.values())), 'other accounts', OTHER,
       'zeroed', sorted(c for c in before if c not in tgt and before[c] > 0))
+# ---------- 2027 replacements and sale proceeds (Nov 8) ----------
+import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import replacements as _R
+out['repl'], _miss, _s = _R.build(INPUTS + 'replacements_2027.csv', INPUTS + 'remarketing.xlsx', out['assets'])
+out['replMissing'] = _miss
+print('replacements', len(out['repl']), 'not on roster', _miss, 'sales used', len(_s))
 json.dump(out, open(OUT + 'data.json', 'w'), separators=(',', ':'))
 
 # ---------- checks ----------
