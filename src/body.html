@@ -10,6 +10,7 @@
       <div class="seg hseg" role="group" aria-label="Cost view (all tabs)" data-seg="view" title="Flip every tab between location charges and actual cost. 450 Millwork and Distribution 353, 356, 359 and 489 are on straight P&amp;L and show actual cost either way."><button type="button" data-val="charge">Location charges</button><button type="button" data-val="op">Actual cost</button></div>
       <span class="pill base" id="hdrStatus">Baseline only</span>
       <button class="btn sun small xbtn" id="btnExport" type="button">Export to Excel</button>
+      <button class="btn small" id="btnAdaptive" type="button" style="background:#fff;border-color:#fff;color:#0D5540">Adaptive export</button>
       <button class="btn ghost small" id="btnReset" type="button">Reset scenario</button>
     </div>
   </div>
@@ -172,6 +173,7 @@
       <li><b>New store 122 Canyon Lake (Region 07).</b> Opens mid-June 2027; its 9 planned assets (2 24' TA Flatbeds, 2 TMFLs, 3 6K forklifts, 1 8K forklift, 1 pickup) are charged from July. Miles, fuel and propane use the Region 07 median for each type; depreciation, maintenance and registration, taxes, Geotab and Lytx use the median of same-type units bought 2024 or later.</li>
       <li><b>Cost rules.</b> Stores (Regions 01–08) and regional loaner pools (761–768): fuel + flat rate, plus $0.425 per mile for trucks. Actual cost (Distribution 353/356/359/489, Millwork 450, Headquarters 730/735/900, 355CD and 355 Reload): fuel + maintenance + depreciation + lease + registration, taxes, Geotab and Lytx.</li>
       <li><b>Rentals.</b> Truck and forklift rental invoices (work order categories "Truck - Rental" and "Forklift - Rental", Oct 2025–Sep 2026) are taken out of maintenance and shown as Truck rental and Forklift rental, spread evenly by month and kept with the unit they were charged to. Like maintenance, they count in location charges only at actual-cost locations. The recurring forklift rental at 011 South Austin was turned in, so it is not carried into 2027.</li>
+      <li><b>Adaptive export.</b> The Adaptive export button (header and every tab) downloads the forecast as shown, scenario changes and replacements included, in the Adaptive import format: Account Code, Level Code, Split Label, 01/2027–12/2027. Stores 001–122, 387 Window Delivery, loaner pools 761–768 and 730/735/900 export their location charges (fuel, flat rate and mileage charge to 6645_AllocatedFleet for stores and pools); their sale proceeds post to 735 Fleet. Distribution 353/356/359, Millwork 450, 489 EWP, 355 Centralized Delivery and 355 Pharr - Reload export actual cost, and their sale proceeds post to their own level. Forklift maintenance is split between repair/maintenance and tires using each unit's tire work orders. Fuel-only accounts 510, 530, 620 and 740 post to 735 Fleet. Sale proceeds are positive.</li>
       <li><b>Lease lines.</b> Lease payments are split by asset type following the Lease Type mapping: Truck (trucks, tractors and trailers), Forklift (forklifts, TMFLs and equipment) and LD (pickups, cars, cargo vans, millwork and open-air trailers).</li>
       <li><b>Maintenance lines.</b> Maintenance is split into four lines by asset type, following the Maintenance Type mapping: Truck (flatbeds, slide flatbeds, conveyors, van bodies, tractors), LD (pickups, cars, cargo vans, millwork and open-air trailers), Forklift (yard and truck-mounted forklifts, order pickers, reach trucks, scissor lifts, golf carts, light towers, sweepers, generators) and Trailer (flatbed, pup and van trailers, rolling tarps).</li>
       <li><b>Depreciation lines.</b> Depreciation is split into four lines by asset type, following the Depreciation Type mapping: Vehicle Heavy (24' TA Flatbeds, slide flatbeds, conveyors, van bodies), Vehicle Light (pickups, cars, cargo vans, millwork and open-air trailers), Forklifts (yard and truck-mounted forklifts, order pickers, reach trucks, scissor lifts, golf carts, light towers, sweepers, generators) and 18 Wheeler (tractors, flatbed, pup and van trailers, rolling tarps).</li>
@@ -660,7 +662,8 @@ document.querySelectorAll('section.view').forEach(sec => {
   const right = el('span', {style: 'display:flex;gap:10px;align-items:center;flex-wrap:wrap'});
   const st = el('span', {class: 'st'}); const bt = el('button', {class: 'btn sun small xbtn', type: 'button', text: 'Export progress to Excel'});
   bt.addEventListener('click', () => exportExcel());
-  right.append(st, bt); bar.append(msg, right); sec.prepend(bar);
+  const ad = el('button', {class: 'btn small', type: 'button', text: 'Adaptive export', title: 'Download the 2027 forecast in the Adaptive import format'}); ad.addEventListener('click', () => exportAdaptive());
+  right.append(st, bt, ad); bar.append(msg, right); sec.prepend(bar);
 });
 addEventListener('beforeunload', e => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
 
@@ -709,6 +712,35 @@ function mkSheet(aoa, money, widths) {
   const ws = XLSX.utils.aoa_to_sheet(aoa); const rg = XLSX.utils.decode_range(ws['!ref'] || 'A1');
   for (let R = 0; R <= rg.e.r; R++) for (const C of (money || [])) { const c = ws[XLSX.utils.encode_cell({r: R, c: C})]; if (c && typeof c.v === 'number') c.z = '$#,##0;[Red]-$#,##0'; }
   ws['!cols'] = (widths || []).map(w => ({wch: w})); return ws;
+}
+/* ---------- Adaptive export ---------- */
+// Stores, loaner pools and HQ (730/735/900) export their location charges; Distribution, Millwork, 355CD and 355 export actual cost.
+// Sale proceeds post to 735 Fleet for charge-format locations and to the location itself for actual-format locations.
+function adaptiveRows() {
+  const A = DATA.adaptive, key = s => String(s).trim().toLowerCase().replace(/\s+/g, ' ');
+  const acc = new Map(), missing = new Set();
+  const add = (code, level, arr, f = 1) => { const k = code + '\u0001' + level; const o = acc.get(k) || (acc.set(k, zero12()), acc.get(k)); for (let i = 0; i < 12; i++) o[i] += arr[i] * f; };
+  for (const r of SCEN.rows) for (const pt of (r.parts || [{loc: r.loc, ch: r.ch, op: r.op}])) {
+    const fmt = A.fmt[pt.loc] || 'op', src = fmt === 'charge' ? pt.ch : pt.op, cats = fmt === 'charge' ? CATS_CH : CATS_OP, level = A.levels[pt.loc] || A.fleetLevel;
+    for (const c of cats) { const arr = src[c]; if (!arr || !arr.some(v => v)) continue; const codes = A.accounts[key(c)]; if (!codes) { missing.add(c); continue; }
+      if (key(c) === 'maintenance - forklift' && codes.length > 1) { const tr = r.a.tire || 0; add(codes[0], level, arr, 1 - tr); if (tr) add(codes[1], level, arr, tr); } else add(codes[0], level, arr); } }
+  let proceeds = 0;
+  if (S.rpOn) for (const q of REPL) { const x = rpCalc(q.id); if (x.r.leased || x.sm > 11 || !x.r.price) continue; const asg = S.assign[q.id]; if (asg === 'TERM' || asg === 'OUT') continue;
+    const loc = asg || x.a.loc, fmt = A.fmt[loc] || 'op', level = fmt === 'charge' ? A.fleetLevel : (A.levels[loc] || A.fleetLevel); const codes = A.accounts[key(procCat(x.a.type))];
+    if (!codes) { missing.add(procCat(x.a.type)); continue; } const arr = zero12(); arr[x.sm] = x.r.price; add(codes[0], level, arr); proceeds += x.r.price; }
+  const rows = [...acc.entries()].map(([k, v]) => { const [code, level] = k.split('\u0001'); return [code, level, '', ...v.map(n => Math.round(n * 100) / 100)]; })
+    .filter(r => r.slice(3).some(v => Math.abs(v) >= 0.005)).sort((a, b) => a[1].localeCompare(b[1]) || a[0].localeCompare(b[0]));
+  return {rows, missing: [...missing], proceeds};
+}
+function exportAdaptive() {
+  if (typeof XLSX === 'undefined') { toast('Excel library still loading; try again in a moment'); return; }
+  const {rows, missing, proceeds} = adaptiveRows(); const hdr = DATA.adaptive.header;
+  const ws = XLSX.utils.aoa_to_sheet([hdr, ...rows]);
+  for (let r = 1; r <= rows.length; r++) for (let c = 3; c < 15; c++) { const cell = ws[XLSX.utils.encode_cell({r, c})]; if (cell) cell.z = '#,##0.00'; }
+  ws['!cols'] = [{wch: 38}, {wch: 32}, {wch: 12}, ...new Array(12).fill({wch: 13})];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Adaptive Import');
+  const fn = `Adaptive_Import_Fleet_2027_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  try { XLSX.writeFile(wb, fn); toast(`Adaptive file downloaded: ${rows.length} rows` + (missing.length ? `; no account for ${missing.join(', ')}` : '')); } catch (e) { toast('Download was blocked; open the GitHub page to export'); }
 }
 function exportExcel() {
   let framed = false; try { framed = window.self !== window.top; } catch (e) { framed = true; }
@@ -786,6 +818,7 @@ function importExcel(file) {
   rd.readAsArrayBuffer(file);
 }
 document.getElementById('btnExport').addEventListener('click', exportExcel);
+document.getElementById('btnAdaptive').addEventListener('click', exportAdaptive);
 document.getElementById('btnExport2').addEventListener('click', exportExcel);
 document.getElementById('btnImport').addEventListener('click', () => document.getElementById('fileImport').click());
 document.getElementById('fileImport').addEventListener('change', e => { const f = e.target.files[0]; if (f) importExcel(f); e.target.value = ''; });

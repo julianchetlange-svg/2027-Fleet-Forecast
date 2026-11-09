@@ -126,6 +126,9 @@ print('011 forklift rental dropped', round(mtw[_isrent & _cat.str.contains('Fork
 rentF = mtw[_isrent & _cat.str.contains('Forklift - Rental') & ~_sa].groupby('Asset Name')[T].sum().to_dict()
 print('rentals in window: truck', round(sum(rentT.values())), 'forklift', round(sum(rentF.values())))
 maint = mtw[~_isrent].groupby('Asset Name')[T].sum().to_dict()
+# tire share of each asset's maintenance (for the Adaptive forklift tires account)
+_tire = mtw[~_isrent & _cat.str.contains('Tires', case=False)].groupby('Asset Name')[T].sum().to_dict()
+TIRE = {k: round(_tire.get(k, 0) / v, 4) for k, v in maint.items() if v > 0 and _tire.get(k, 0) > 0}
 ms = mt[(mt.dt >= '2025-01-01') & (mt.dt < '2026-10-01') & ~mt['Work Order Category Full Path'].fillna('').str.contains('Regist', case=False)]
 def season(x):
     m = x.groupby([x.dt.dt.year, x.dt.dt.month])[T].sum().unstack(0)
@@ -175,7 +178,7 @@ for _, r in a.iterrows():
                own='Owned' if owned else 'Leased', status=r['Asset Status'], isd=r.isd.strftime('%Y-%m-%d'), term=int(r.term),
                dep=round(depm, 2), depElig=elig, depSrc=dep_src.get(aid, '') if owned and depm else '',
                lease=round(float(lease.get(aid, 0) or 0), 2) if not owned else 0.0, leaseNote=lease_note.get(aid, '') if not owned else '',
-               flat=FLAT.get(r['Asset Template Name']), maint=round(float(maint.get(aid, 0.0)), 2), rentT=round(float(rentT.get(aid, 0.0)), 2), rentF=round(float(rentF.get(aid, 0.0)), 2),
+               flat=FLAT.get(r['Asset Template Name']), maint=round(float(maint.get(aid, 0.0)), 2), tire=TIRE.get(aid, 0.0), rentT=round(float(rentT.get(aid, 0.0)), 2), rentF=round(float(rentF.get(aid, 0.0)), 2),
                miles=0.0, gal=0.0, lp=0.0, milesNote='', galNote='', fuelNote='')
     if aid in fee.index:
         rec['reg'] = round(float(fee.loc[aid, FC[0]]) + float(fee.loc[aid, FC[1]]), 4); rec['tel'] = float(fee.loc[aid, FC[2]]) + float(fee.loc[aid, FC[3]]); rec['geo'] = float(fee.loc[aid, FC[2]]); rec['lytx'] = float(fee.loc[aid, FC[3]])
@@ -295,7 +298,7 @@ df['flags'] = df.apply(flags, axis=1)
 FUEL27 = [5.198, 5.016, 4.834, 4.590, 4.455, 4.320, 4.185, 4.095, 4.005, 3.915, 3.825, 3.735]
 LP27 = [1.624, 1.637, 1.626, 1.610, 1.604, 1.585, 1.591, 1.578, 1.567, 1.540, 1.524, 1.525]
 cols = ['id', 'loc', 'type', 'cls', 'make', 'own', 'status', 'isd', 'term', 'dep', 'depElig', 'depSrc', 'lease', 'flat',
-        'maint', 'rentT', 'rentF', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'geo', 'lytx', 'flags', 'galW', 'lpW', 'dc']
+        'maint', 'tire', 'rentT', 'rentF', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'geo', 'lytx', 'flags', 'galW', 'lpW', 'dc']
 # ---------- planned new store: 122 Canyon Lake (Region 07), opens mid-June 2027, costs from July ----------
 NEW_LOC = dict(id='122', name='Canyon Lake', district='Region 07', kind='Store')
 NEW_FLEET = [("24' TA Flatbed", 2), ('Truck Mounted Forklift', 2), ('6K Yard Forklift', 3), ('8K Yard Forklift', 1), ('Pickup', 1)]
@@ -410,6 +413,34 @@ print('proceeds lines', sorted(set(out['procType'].values())))
 _lt = pd.read_excel(INPUTS + 'lease_type.xlsx', header=4)
 out['leaseType'] = {str(k).strip(): str(v).strip() for k, v in zip(_lt.iloc[:, 0], _lt.iloc[:, 1]) if str(k).strip() not in ('', 'nan')}
 print('lease lines', sorted(set(out['leaseType'].values())), 'unmapped leased', sorted({a['type'] for a in out['assets'] if a['lease'] and a['type'] not in out['leaseType']}))
+
+# ---------- Adaptive export mapping (Adaptive_Import_Template.xlsx, Nov 9) ----------
+_fa = pd.read_excel(INPUTS + 'adaptive_template.xlsx', sheet_name='Fleet Accounts', dtype=str)
+_key = lambda s: re.sub(r'\s+', ' ', str(s).strip().lower())
+_acc = {}
+for _n, _c in zip(_fa.iloc[:, 0], _fa.iloc[:, 1]):
+    if str(_n).strip() in ('', 'nan'): continue
+    _acc.setdefault(_key(_n), []).append(str(_c).strip())
+_lv = pd.read_excel(INPUTS + 'adaptive_template.xlsx', sheet_name='Levels', dtype=str)
+_lvl = {}
+for _s, _c in zip(_lv.iloc[:, 0], _lv.iloc[:, 1]):
+    _code = str(_s).strip().split()[0]
+    _lvl.setdefault(_code, []).append((str(_s).strip(), str(_c).strip()))
+LEVEL = {}
+for l in out['locations']:
+    i = l['id']
+    if i == '355CD': LEVEL[i] = next(c for s, c in _lvl['355'] if 'Central' in s)
+    elif i == '355': LEVEL[i] = next(c for s, c in _lvl['355'] if 'Reload' in s)
+    elif i in _lvl: LEVEL[i] = _lvl[i][0][1]
+FLEET_LEVEL = _lvl['735'][0][1]
+for l in out['locations']:
+    if l['id'] not in LEVEL: LEVEL[l['id']] = FLEET_LEVEL   # fuel-only accounts 510/530/620/740 post to 735 Fleet
+CHG_KINDS = {'Store', 'Loaner pool', 'Headquarters'}
+out['adaptive'] = dict(accounts=_acc, levels=LEVEL, fleetLevel=FLEET_LEVEL,
+                       fmt={l['id']: ('charge' if l['kind'] in CHG_KINDS else 'op') for l in out['locations']},
+                       header=[str(c) for c in pd.read_excel(INPUTS + 'adaptive_template.xlsx', sheet_name='Adaptive Import', header=None, dtype=str).iloc[0]])
+print('adaptive: accounts', len(_acc), 'levels', len(LEVEL), 'charge-format locs', sum(v == 'charge' for v in out['adaptive']['fmt'].values()),
+      'to 735 (no level)', [l['id'] for l in out['locations'] if l['id'] not in _lvl and l['id'] not in ('355CD', '355')])
 
 # ---------- 2027 replacements and sale proceeds (Nov 8) ----------
 import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
