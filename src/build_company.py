@@ -406,6 +406,11 @@ _norm = lambda v: re.sub(r'\s+', ' ', re.sub(r'(?i)^sale proceeds\s*-\s*', 'Sale
 out['procType'] = {str(k).strip(): _norm(v) for k, v in zip(_pt.iloc[:, 0], _pt.iloc[:, 1]) if str(k).strip() not in ('', 'nan')}
 print('proceeds lines', sorted(set(out['procType'].values())))
 
+# ---------- lease GL lines by asset type (Lease_Type.xlsx, Nov 9) ----------
+_lt = pd.read_excel(INPUTS + 'lease_type.xlsx', header=4)
+out['leaseType'] = {str(k).strip(): str(v).strip() for k, v in zip(_lt.iloc[:, 0], _lt.iloc[:, 1]) if str(k).strip() not in ('', 'nan')}
+print('lease lines', sorted(set(out['leaseType'].values())), 'unmapped leased', sorted({a['type'] for a in out['assets'] if a['lease'] and a['type'] not in out['leaseType']}))
+
 # ---------- 2027 replacements and sale proceeds (Nov 8) ----------
 import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import replacements as _R
