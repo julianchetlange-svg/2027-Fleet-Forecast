@@ -120,7 +120,10 @@ mtw = mtw[~(isreg & mtw['Asset Name'].isin(HASFEE))]
 _cat = mtw['Work Order Category Full Path'].fillna('')
 _isrent = _cat.str.contains(r'- Rental', regex=True)
 rentT = mtw[_isrent & _cat.str.contains('Truck - Rental')].groupby('Asset Name')[T].sum().to_dict()
-rentF = mtw[_isrent & _cat.str.contains('Forklift - Rental')].groupby('Asset Name')[T].sum().to_dict()
+# 011 South Austin turned in its recurring forklift rental; it does not continue into 2027 (user, Nov 9)
+_sa = mtw['Work Order Store Identifier'].fillna('').str.startswith('011')
+print('011 forklift rental dropped', round(mtw[_isrent & _cat.str.contains('Forklift - Rental') & _sa][T].sum()))
+rentF = mtw[_isrent & _cat.str.contains('Forklift - Rental') & ~_sa].groupby('Asset Name')[T].sum().to_dict()
 print('rentals in window: truck', round(sum(rentT.values())), 'forklift', round(sum(rentF.values())))
 maint = mtw[~_isrent].groupby('Asset Name')[T].sum().to_dict()
 ms = mt[(mt.dt >= '2025-01-01') & (mt.dt < '2026-10-01') & ~mt['Work Order Category Full Path'].fillna('').str.contains('Regist', case=False)]
