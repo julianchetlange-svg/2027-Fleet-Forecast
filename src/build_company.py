@@ -385,6 +385,12 @@ _dt = pd.read_excel(INPUTS + 'depreciation_type.xlsx', header=4)
 out['depType'] = {str(k).strip(): str(v).strip() for k, v in zip(_dt.iloc[:, 0], _dt.iloc[:, 1]) if str(k).strip() not in ('', 'nan')}
 print('depreciation lines', sorted(set(out['depType'].values())))
 
+# ---------- maintenance GL lines by asset type (Maintenace_Type.xlsx, Nov 9) ----------
+_mt = pd.read_excel(INPUTS + 'maintenance_type.xlsx', header=4)
+out['maintType'] = {str(k).strip(): str(v).strip() for k, v in zip(_mt.iloc[:, 0], _mt.iloc[:, 1]) if str(k).strip() not in ('', 'nan')}
+_unm = sorted({a['type'] for a in out['assets'] if a['maint'] and a['type'] not in out['maintType']})
+print('maintenance lines', sorted(set(out['maintType'].values())), 'unmapped with maintenance', _unm)
+
 # ---------- 2027 replacements and sale proceeds (Nov 8) ----------
 import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import replacements as _R
