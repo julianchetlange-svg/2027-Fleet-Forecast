@@ -116,7 +116,13 @@ mtw = mt[(mt.dt >= '2025-10-01') & (mt.dt < '2026-10-01')]
 isreg = mtw['Work Order Category Full Path'].fillna('').str.contains('Regist', case=False)
 # registration work orders leave maintenance only where the fee file supplies registration (avoids double count)
 mtw = mtw[~(isreg & mtw['Asset Name'].isin(HASFEE))]
-maint = mtw.groupby('Asset Name')[T].sum().to_dict()
+# rentals (work order categories "Truck - Rental" / "Forklift - Rental") are broken out of maintenance (Nov 9)
+_cat = mtw['Work Order Category Full Path'].fillna('')
+_isrent = _cat.str.contains(r'- Rental', regex=True)
+rentT = mtw[_isrent & _cat.str.contains('Truck - Rental')].groupby('Asset Name')[T].sum().to_dict()
+rentF = mtw[_isrent & _cat.str.contains('Forklift - Rental')].groupby('Asset Name')[T].sum().to_dict()
+print('rentals in window: truck', round(sum(rentT.values())), 'forklift', round(sum(rentF.values())))
+maint = mtw[~_isrent].groupby('Asset Name')[T].sum().to_dict()
 ms = mt[(mt.dt >= '2025-01-01') & (mt.dt < '2026-10-01') & ~mt['Work Order Category Full Path'].fillna('').str.contains('Regist', case=False)]
 def season(x):
     m = x.groupby([x.dt.dt.year, x.dt.dt.month])[T].sum().unstack(0)
@@ -166,7 +172,7 @@ for _, r in a.iterrows():
                own='Owned' if owned else 'Leased', status=r['Asset Status'], isd=r.isd.strftime('%Y-%m-%d'), term=int(r.term),
                dep=round(depm, 2), depElig=elig, depSrc=dep_src.get(aid, '') if owned and depm else '',
                lease=round(float(lease.get(aid, 0) or 0), 2) if not owned else 0.0, leaseNote=lease_note.get(aid, '') if not owned else '',
-               flat=FLAT.get(r['Asset Template Name']), maint=round(float(maint.get(aid, 0.0)), 2),
+               flat=FLAT.get(r['Asset Template Name']), maint=round(float(maint.get(aid, 0.0)), 2), rentT=round(float(rentT.get(aid, 0.0)), 2), rentF=round(float(rentF.get(aid, 0.0)), 2),
                miles=0.0, gal=0.0, lp=0.0, milesNote='', galNote='', fuelNote='')
     if aid in fee.index:
         rec['reg'] = round(float(fee.loc[aid, FC[0]]) + float(fee.loc[aid, FC[1]]), 4); rec['tel'] = float(fee.loc[aid, FC[2]]) + float(fee.loc[aid, FC[3]]); rec['geo'] = float(fee.loc[aid, FC[2]]); rec['lytx'] = float(fee.loc[aid, FC[3]])
@@ -286,7 +292,7 @@ df['flags'] = df.apply(flags, axis=1)
 FUEL27 = [5.198, 5.016, 4.834, 4.590, 4.455, 4.320, 4.185, 4.095, 4.005, 3.915, 3.825, 3.735]
 LP27 = [1.624, 1.637, 1.626, 1.610, 1.604, 1.585, 1.591, 1.578, 1.567, 1.540, 1.524, 1.525]
 cols = ['id', 'loc', 'type', 'cls', 'make', 'own', 'status', 'isd', 'term', 'dep', 'depElig', 'depSrc', 'lease', 'flat',
-        'maint', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'geo', 'lytx', 'flags', 'galW', 'lpW', 'dc']
+        'maint', 'rentT', 'rentF', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'geo', 'lytx', 'flags', 'galW', 'lpW', 'dc']
 # ---------- planned new store: 122 Canyon Lake (Region 07), opens mid-June 2027, costs from July ----------
 NEW_LOC = dict(id='122', name='Canyon Lake', district='Region 07', kind='Store')
 NEW_FLEET = [("24' TA Flatbed", 2), ('Truck Mounted Forklift', 2), ('6K Yard Forklift', 3), ('8K Yard Forklift', 1), ('Pickup', 1)]
