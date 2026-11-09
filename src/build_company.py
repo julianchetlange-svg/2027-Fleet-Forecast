@@ -1,5 +1,5 @@
 """Company-wide 2027 fleet forecast data model (all locations except 950 Rio Truss)."""
-import pandas as pd, numpy as np, json, os
+import pandas as pd, numpy as np, json, os, re
 A = '/mnt/user-data/attachments/beabc8da-8639-59c1-85f4-c5bad2fd86c1/'
 S = '/tmp/claude-0/-home-claude/beabc8da-8639-59c1-85f4-c5bad2fd86c1/scratchpad/'
 OUT = S + 'company/'
@@ -399,6 +399,12 @@ _mt = pd.read_excel(INPUTS + 'maintenance_type.xlsx', header=4)
 out['maintType'] = {str(k).strip(): str(v).strip() for k, v in zip(_mt.iloc[:, 0], _mt.iloc[:, 1]) if str(k).strip() not in ('', 'nan')}
 _unm = sorted({a['type'] for a in out['assets'] if a['maint'] and a['type'] not in out['maintType']})
 print('maintenance lines', sorted(set(out['maintType'].values())), 'unmapped with maintenance', _unm)
+
+# ---------- sale proceeds GL lines by asset type (Proceeds_Type.xlsx, Nov 9) ----------
+_pt = pd.read_excel(INPUTS + 'proceeds_type.xlsx', header=4)
+_norm = lambda v: re.sub(r'\s+', ' ', re.sub(r'(?i)^sale proceeds\s*-\s*', 'Sale proceeds - ', str(v).strip()))
+out['procType'] = {str(k).strip(): _norm(v) for k, v in zip(_pt.iloc[:, 0], _pt.iloc[:, 1]) if str(k).strip() not in ('', 'nan')}
+print('proceeds lines', sorted(set(out['procType'].values())))
 
 # ---------- 2027 replacements and sale proceeds (Nov 8) ----------
 import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
