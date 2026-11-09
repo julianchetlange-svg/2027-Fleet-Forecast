@@ -351,7 +351,8 @@ out = dict(generated='2026-10-30',
 # Each location's trucks are scaled so its monthly gallons equal its row (fuel stays with the card account that bought it).
 # Tank rows go to 353 / 356 / 359 (359 includes 489). 068 is closed and dropped. Accounts with no fueled truck get a fuel-only line.
 # All gallons are priced at the blended 2027 rate.
-out['dcFuelRate'] = FUEL27[:]
+# 2027 diesel price for every location = the 2027 diesel forecast prices (Distribution_Fuel_Forecast_2027.xlsx) (Julian, Nov 9)
+out['fuelRate'] = DC_FUEL[:]; out['dcFuelRate'] = DC_FUEL[:]; out['ratesVer'] = 'diesel-forecast-2026-11-09'
 fl = pd.read_excel(INPUTS + 'fuel_by_location.xlsx', sheet_name='Gallons', header=2, dtype={'Location': str})
 fl = fl[fl['Source'].isin(['Fuel card', 'On-site tank'])].copy()
 fl['code'] = fl['Location'].str.extract(r'\((\d+)\)')[0].fillna(fl['Location']).str.strip()
