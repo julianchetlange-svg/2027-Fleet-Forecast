@@ -380,6 +380,11 @@ FUEL_SRC = dict(total=round(sum(sum(v) for v in tgt.values())), months=[round(su
 out['fuelSrc'] = FUEL_SRC
 print('fuel by location: target', FUEL_SRC['total'], 'assigned', round(sum(after.values())), 'other accounts', OTHER,
       'zeroed', sorted(c for c in before if c not in tgt and before[c] > 0))
+# ---------- depreciation GL lines by asset type (Depreciation_Type.xlsx, Nov 9) ----------
+_dt = pd.read_excel(INPUTS + 'depreciation_type.xlsx', header=4)
+out['depType'] = {str(k).strip(): str(v).strip() for k, v in zip(_dt.iloc[:, 0], _dt.iloc[:, 1]) if str(k).strip() not in ('', 'nan')}
+print('depreciation lines', sorted(set(out['depType'].values())))
+
 # ---------- 2027 replacements and sale proceeds (Nov 8) ----------
 import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import replacements as _R
