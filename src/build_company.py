@@ -433,9 +433,12 @@ for l in out['locations']:
     elif i == '355': LEVEL[i] = next(c for s, c in _lvl['355'] if 'Reload' in s)
     elif i in _lvl: LEVEL[i] = _lvl[i][0][1]
 FLEET_LEVEL = _lvl['735'][0][1]
+# department fuel accounts are not on the Levels tab; codes from Julian (Nov 9). They use the charges format.
+LEVEL.update({'510': '510 Information Services Dept', '530': '530 People Development', '620': '620 Marketing Dept', '740': '740 Risk Management'})
 for l in out['locations']:
-    if l['id'] not in LEVEL: LEVEL[l['id']] = FLEET_LEVEL   # fuel-only accounts 510/530/620/740 post to 735 Fleet
-CHG_KINDS = {'Store', 'Loaner pool', 'Headquarters'}
+    if l['id'] not in LEVEL: LEVEL[l['id']] = FLEET_LEVEL
+    if l['id'] in ('510', '530', '620', '740'): l['name'] = LEVEL[l['id']].split(' ', 1)[1]
+CHG_KINDS = {'Store', 'Loaner pool', 'Headquarters', 'Fuel account'}
 out['adaptive'] = dict(accounts=_acc, levels=LEVEL, fleetLevel=FLEET_LEVEL,
                        fmt={l['id']: ('charge' if l['kind'] in CHG_KINDS else 'op') for l in out['locations']},
                        header=[str(c) for c in pd.read_excel(INPUTS + 'adaptive_template.xlsx', sheet_name='Adaptive Import', header=None, dtype=str).iloc[0]])
