@@ -243,7 +243,7 @@ tr.lrow.sub td:first-child{padding-left:44px}
   <div class="kpis" id="kpis"></div>
   <div class="panel">
     <div class="callout">
-      <div class="ch"><span class="eyebrow">Location charges</span><p><b>What each location is charged under the cost rules.</b> Stores and the regional loaner pools (761–768) carry fuel, the fixed flat rate and $0.425 per truck mile. Distribution, Millwork, Headquarters, 355CD and 355 Reload carry actual cost: fuel, maintenance, depreciation, lease, registration, taxes, Geotab and Lytx. <b>450 Millwork and Distribution 353, 356, 359 and 489 are on straight P&amp;L</b>, so they show the same actual cost in both views.</p></div>
+      <div class="ch"><span class="eyebrow">Location charges</span><p><b>What each location is charged under the cost rules.</b> Stores, the regional loaner pools (761–768) and the HQ departments (730, 735, 510, 530, 590, 620, 705, 740) carry fuel, the fixed flat rate and $0.425 per truck mile. Distribution, Millwork, 355CD and 355 Reload carry actual cost: fuel, maintenance, depreciation, lease, registration, taxes, Geotab and Lytx. <b>450 Millwork and Distribution 353, 356, 359 and 489 are on straight P&amp;L</b>, so they show the same actual cost in both views.</p></div>
       <div class="op"><span class="eyebrow">Actual cost</span><p><b>What McCoy's actually spends.</b> Fuel, maintenance, depreciation, lease, registration, taxes and telematics for every asset, wherever it sits. Flat rates and mileage charges are internal and left out, so only a real change in miles, fuel or fleet size moves this number.</p></div>
     </div>
   </div>
@@ -382,7 +382,7 @@ tr.lrow.sub td:first-child{padding-left:44px}
     <ul class="rules" id="methodList">
       <li><b>Scope.</b> <span id="mScope"></span> Every active asset on the asset roster except 950 Rio Truss. The roster sets location and in-service date. 033 Pharr, 355CD and 355 Pharr Reload sit in Region 05; regional loaner pools (761–768) sit in their regions. 765 (Region 05) and 768 (Region 08) have no assets on the roster, so each carries one fuel-only line at the average of the other pools' fuel (2,879 gal/yr).</li>
       <li><b>New store 122 Canyon Lake (Region 07).</b> Opens mid-June 2027; its 9 planned assets (2 24' TA Flatbeds, 2 TMFLs, 3 6K forklifts, 1 8K forklift, 1 pickup) are charged from July. Miles, fuel and propane use the Region 07 median for each type; depreciation, maintenance and registration, taxes, Geotab and Lytx use the median of same-type units bought 2024 or later.</li>
-      <li><b>Cost rules.</b> Stores (Regions 01–08) and regional loaner pools (761–768): fuel + flat rate, plus $0.425 per mile for trucks. Actual cost (Distribution 353/356/359/489, Millwork 450, Headquarters 730/735/900, 355CD and 355 Reload): fuel + maintenance + depreciation + lease + registration, taxes, Geotab and Lytx.</li>
+      <li><b>Cost rules.</b> Stores (Regions 01–08), regional loaner pools (761–768) and HQ departments (730, 735, 510, 530, 590, 620, 705, 740): fuel + flat rate, plus $0.425 per mile for trucks. Actual cost (Distribution 353/356/359/489, Millwork 450, 355CD and 355 Reload): fuel + maintenance + depreciation + lease + registration, taxes, Geotab and Lytx.</li>
       <li><b>Rentals.</b> Truck and forklift rental invoices (work order categories "Truck - Rental" and "Forklift - Rental", Oct 2025–Sep 2026) are taken out of maintenance and shown as Truck rental and Forklift rental, spread evenly by month and kept with the unit they were charged to. Like maintenance, they count in location charges only at actual-cost locations. The recurring forklift rental at 011 South Austin was turned in, so it is not carried into 2027.</li>
       <li><b>Adaptive export.</b> The Adaptive export button (header and every tab) downloads the forecast as shown, scenario changes and replacements included, in the Adaptive import format: Account Code, Level Code, Split Label, 01/2027–12/2027. Stores 001–122, 387 Window Delivery, loaner pools 761–768 and 730/735/900 export their location charges (fuel, flat rate and mileage charge to 6645_AllocatedFleet for stores and pools); their sale proceeds post to 735 Fleet. Distribution 353/356/359, Millwork 450, 489 EWP, 355 Centralized Delivery and 355 Pharr - Reload export actual cost, and their sale proceeds post to their own level. All forklift maintenance goes to 6602_ForkliftRepair_Maintenance. Department fuel accounts 510 Information Services, 530 People Development, 620 Marketing and 740 Risk Management export in the charges format to their own levels. Sale proceeds export as a deduction (negative).</li>
       <li><b>Lease lines.</b> Lease payments are split by asset type following the Lease Type mapping: Truck (trucks, tractors and trailers), Forklift (forklifts, TMFLs and equipment) and LD (pickups, cars, cargo vans, millwork and open-air trailers).</li>
@@ -414,7 +414,7 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 const LOCS = DATA.locations; const LOC = Object.fromEntries(LOCS.map(l => [l.id, l]));
 const DISTS = DATA.districts.filter(d => LOCS.some(l => l.district === d));
 const LOCS_BY_D = Object.fromEntries(DISTS.map(d => [d, LOCS.filter(l => l.district === d)]));
-const FLATK = new Set(['Store', 'Loaner pool']);   // charged fuel + flat rate + $/mile
+const FLATK = new Set(['Store', 'Loaner pool', 'Headquarters']);   // HQ departments are charged like stores (Julian, Nov 10)   // charged fuel + flat rate + $/mile
 const isActual = id => !!LOC[id] && !FLATK.has(LOC[id].kind);
 const REM = new Set(['TERM', 'OUT']);
 const REM_LABEL = {TERM: 'Terminated (sold / lease returned)', OUT: 'Relocated out of McCoy\'s plan'};
@@ -616,8 +616,8 @@ function renderOverview() {
   const isOp = S.view === 'op', vb = isOp ? bo : bc, vs = isOp ? so : sc, vd = vs.total - vb.total, vn = isOp ? 'actual cost' : 'location charges';
   k.append(kpi('lead', 'Baseline 2027 · ' + vn, usdK(vb.total), isOp ? `Location charges ${usdK(bc.total)}` : `Actual cost ${usdK(bo.total)}`));
   k.append(kpi('', 'Scenario · ' + vn, usdK(vs.total), `<span class="${dcls(vd)}">${sgnK(vd)}</span> vs. baseline (${vb.total ? (vd / vb.total * 100).toFixed(1) : 0}%)`));
-  k.append(kpi('', 'Actual-cost locations', `<span class="${dcls(sa - ba)}">${sgnK(sa - ba)}</span>`, `Distribution, Millwork, HQ, 355CD and 355: ${usdK(ba)} → ${usdK(sa)}`));
-  k.append(kpi('', 'Store & loaner-pool charges', `<span class="${dcls(ss - bs)}">${sgnK(ss - bs)}</span>`, `${usdK(bs)} baseline → ${usdK(ss)}`));
+  k.append(kpi('', 'Actual-cost locations', `<span class="${dcls(sa - ba)}">${sgnK(sa - ba)}</span>`, `Distribution, Millwork, 355CD and 355: ${usdK(ba)} → ${usdK(sa)}`));
+  k.append(kpi('', 'Store, loaner-pool & HQ charges', `<span class="${dcls(ss - bs)}">${sgnK(ss - bs)}</span>`, `${usdK(bs)} baseline → ${usdK(ss)}`));
   const rem = removalSummary(); const remAmt = rem.save + rem.out;
   k.append(kpi('', 'Actual cost change', `<span class="${dcls(dop)}">${sgnK(dop)}</span>`, Math.abs(dop) < 500 ? 'Moves shift charges; real spend is unchanged.' : `Removals ${sgnK(-remAmt)}; fuel and other shifts ${sgnK(dop + remAmt)}.`));
   if (rem.n) k.append(kpi('', 'Savings from removals', `<span class="${remAmt > 0.5 ? 'down' : ''}">${usdK(remAmt)}</span>`, `Terminated (${rem.nT}): ${usdK(rem.save)} company saving. Relocated out (${rem.nO}): ${usdK(rem.out)} leaves McCoy's plan.`));
