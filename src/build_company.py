@@ -29,6 +29,7 @@ _dr = pd.read_excel(INPUTS + 'department_reassignments.xlsx', dtype=str)
 DEPT_LEVEL = {}
 for _, _r in _dr.iterrows():
     aid_, dep_ = str(_r['Asset Number']).strip(), str(_r['Revised Department']).strip()
+    dep_ = {'20046': '620 Marketing Dept'}.get(aid_, dep_)   # Julian, Nov 10: 20046 goes to 620 Marketing
     code_, name_ = dep_.split(' ', 1)
     DEPT_LEVEL[code_] = dep_
     m_ = a['Asset Name'] == aid_
