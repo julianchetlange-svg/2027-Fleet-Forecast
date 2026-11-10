@@ -32,7 +32,7 @@
   <div class="kpis" id="kpis"></div>
   <div class="panel">
     <div class="callout">
-      <div class="ch"><span class="eyebrow">Location charges</span><p><b>What each location is charged under the cost rules.</b> Stores, the regional loaner pools (761–768) and the HQ departments (730, 735, 510, 530, 590, 620, 705, 740) carry fuel, the fixed flat rate and $0.425 per truck mile. Distribution, Millwork, 355CD and 355 Reload carry actual cost: fuel, maintenance, depreciation, lease, registration, taxes, Geotab and Lytx. <b>450 Millwork and Distribution 353, 356, 359 and 489 are on straight P&amp;L</b>, so they show the same actual cost in both views.</p></div>
+      <div class="ch"><span class="eyebrow">Location charges</span><p><b>What each location is charged under the cost rules.</b> Stores, the regional loaner pools (761–768) and the HQ departments (730, 735, 510, 530, 590, 620, 705, 740) carry fuel, the fixed flat rate and $0.425 per truck mile (LD vehicles – pickups, cars and cargo vans – get no mileage charge). Distribution, Millwork, 355CD and 355 Reload carry actual cost: fuel, maintenance, depreciation, lease, registration, taxes, Geotab and Lytx. <b>450 Millwork and Distribution 353, 356, 359 and 489 are on straight P&amp;L</b>, so they show the same actual cost in both views.</p></div>
       <div class="op"><span class="eyebrow">Actual cost</span><p><b>What McCoy's actually spends.</b> Fuel, maintenance, depreciation, lease, registration, taxes and telematics for every asset, wherever it sits. Flat rates and mileage charges are internal and left out, so only a real change in miles, fuel or fleet size moves this number.</p></div>
     </div>
   </div>
@@ -71,7 +71,7 @@
     <div class="panel">
       <div class="phead"><div><h2>How a move works</h2></div></div>
       <ul class="rules">
-        <li><b>The destination's rules apply.</b> At a store an asset is charged its flat rate (and $0.425 per mile for trucks). At an actual-cost location it carries its fuel, maintenance, depreciation, lease and fees.</li>
+        <li><b>The destination's rules apply.</b> At a store an asset is charged its flat rate (and $0.425 per mile for trucks other than pickups, cars and cargo vans). At an actual-cost location it carries its fuel, maintenance, depreciation, lease and fees.</li>
         <li><b>Work stays with the location.</b> Demand is what the history shows, so a moved truck brings no new work. The miles it drove stay at its origin and pass to the trucks that remain there, at the fuel rate of the truck that left. At the destination, the location's existing miles are shared across all its trucks.</li>
         <li><b>Forklifts carry their propane.</b> TMFLs, trailers and other equipment have no separate fuel.</li>
         <li><b>Terminate or relocate out.</b> The asset's costs leave the forecast from its effective month. Terminating saves the company its maintenance, depreciation, lease and fees; relocating out moves them outside McCoy's 2027 plan. Its work stays with the remaining units at the location.</li>
@@ -171,7 +171,7 @@
     <ul class="rules" id="methodList">
       <li><b>Scope.</b> <span id="mScope"></span> Every active asset on the asset roster except 950 Rio Truss. The roster sets location and in-service date. 033 Pharr, 355CD and 355 Pharr Reload sit in Region 05; regional loaner pools (761–768) sit in their regions. 765 (Region 05) and 768 (Region 08) have no assets on the roster, so each carries one fuel-only line at the average of the other pools' fuel (2,879 gal/yr).</li>
       <li><b>New store 122 Canyon Lake (Region 07).</b> Opens mid-June 2027; its 9 planned assets (2 24' TA Flatbeds, 2 TMFLs, 3 6K forklifts, 1 8K forklift, 1 pickup) are charged from July. Miles, fuel and propane use the Region 07 median for each type; depreciation, maintenance and registration, taxes, Geotab and Lytx use the median of same-type units bought 2024 or later.</li>
-      <li><b>Cost rules.</b> Stores (Regions 01–08), regional loaner pools (761–768) and HQ departments (730, 735, 510, 530, 590, 620, 705, 740): fuel + flat rate, plus $0.425 per mile for trucks. Actual cost (Distribution 353/356/359/489, Millwork 450, 355CD and 355 Reload): fuel + maintenance + depreciation + lease + registration, taxes, Geotab and Lytx.</li>
+      <li><b>Cost rules.</b> Stores (Regions 01–08), regional loaner pools (761–768) and HQ departments (730, 735, 510, 530, 590, 620, 705, 740): fuel + flat rate, plus $0.425 per mile for trucks (not LD vehicles: pickups, cars and cargo vans). Actual cost (Distribution 353/356/359/489, Millwork 450, 355CD and 355 Reload): fuel + maintenance + depreciation + lease + registration, taxes, Geotab and Lytx.</li>
       <li><b>Rentals.</b> Truck and forklift rental invoices (work order categories "Truck - Rental" and "Forklift - Rental", Oct 2025–Sep 2026) are taken out of maintenance and shown as Truck rental and Forklift rental, spread evenly by month and kept with the unit they were charged to. Like maintenance, they count in location charges only at actual-cost locations. The recurring forklift rental at 011 South Austin was turned in, so it is not carried into 2027.</li>
       <li><b>Adaptive export.</b> The Adaptive export button (header and every tab) downloads the forecast as shown, scenario changes and replacements included, in the Adaptive import format: Account Code, Level Code, Split Label, 01/2027–12/2027. Stores 001–122, 387 Window Delivery, loaner pools 761–768 and 730/735/900 export their location charges (fuel, flat rate and mileage charge to 6645_AllocatedFleet for stores and pools); their sale proceeds post to 735 Fleet. Distribution 353/356/359, Millwork 450, 489 EWP, 355 Centralized Delivery and 355 Pharr - Reload export actual cost, and their sale proceeds post to their own level. All forklift maintenance goes to 6602_ForkliftRepair_Maintenance. Department fuel accounts 510 Information Services, 530 People Development, 620 Marketing and 740 Risk Management export in the charges format to their own levels. Sale proceeds export as a deduction (negative).</li>
       <li><b>Lease lines.</b> Lease payments are split by asset type following the Lease Type mapping: Truck (trucks, tractors and trailers), Forklift (forklifts, TMFLs and equipment) and LD (pickups, cars, cargo vans, millwork and open-air trailers).</li>
@@ -210,6 +210,7 @@ const REM_LABEL = {TERM: 'Terminated (sold / lease returned)', OUT: 'Relocated o
 const locShort = id => id === 'TERM' ? 'Terminated' : id === 'OUT' ? 'Relocated out' : id;
 const ASSETS = DATA.assets; const AMAP = Object.fromEntries(ASSETS.map(a => [a.id, a])); const AIDX = Object.fromEntries(ASSETS.map((a, i) => [a.id, i]));
 const LD_TYPES = new Set(['Pickup', 'Cargo Van']);   // light-duty vehicles: fuel shown as LD fuel
+const NO_MILE = new Set(['Pickup', 'Car', 'Cargo Van']);   // LD vehicles get no mileage charge (Julian, Nov 10)
 const DEP_CATS = ['Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler'];
 const depCat = t => (DATA.depType || {})[t] || 'Depreciation - Vehicle Heavy';
 const leaseCat = t => (DATA.leaseType || {})[t] || 'Lease - Truck';
@@ -288,7 +289,7 @@ function run(assign) {
       const fk = LD_TYPES.has(a.type) ? 'LD fuel' : 'Truck fuel'; op[fk][i] = tf; op['Forklift fuel'][i] = ff; op[mk][i] = maint; op['Truck rental'][i] = (a.rentT || 0) / 12; op['Forklift rental'][i] = (a.rentF || 0) / 12; op[dk][i] = dep; op[lk][i] = lease; op['Registration & taxes'][i] = reg; op.Geotab[i] = a.geo; op.Lytx[i] = a.lytx;
       ch[fk][i] = tf; ch['Forklift fuel'][i] = ff;
       if (actual) { ch[mk][i] = maint; ch['Truck rental'][i] = (a.rentT || 0) / 12; ch['Forklift rental'][i] = (a.rentF || 0) / 12; ch[dk][i] = dep; ch[lk][i] = lease; ch['Registration & taxes'][i] = reg; ch.Geotab[i] = a.geo; ch.Lytx[i] = a.lytx; }
-      else { ch['Flat rate'][i] = flat; if (a.cls === 'Truck') ch['Mileage charge'][i] = m / 12 * S.p.mileRate; }
+      else { ch['Flat rate'][i] = flat; if (a.cls === 'Truck' && !NO_MILE.has(a.type)) ch['Mileage charge'][i] = m / 12 * S.p.mileRate; }
     }
     return {a, loc, miles: m, gal, lp, ch, op, parts: [{loc, ch, op}]};
   });
