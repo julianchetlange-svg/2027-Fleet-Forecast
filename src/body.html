@@ -223,7 +223,7 @@ const KIND_CHIP = {Store: 's', Central: 'c', Distribution: 'c', Millwork: 'c', H
 const DEF = () => ({ratesVer: DATA.ratesVer, fuelRate: DATA.fuelRate.slice(), lpRate: DATA.lpRate.slice(), dcFuelRate: (DATA.dcFuelRate || DATA.fuelRate).slice(), dcLpRate: (DATA.dcLpRate || DATA.lpRate).slice(), mileRate: DATA.mileRate, maintTrend: 0, maintSeason: 'company', mileGrowth: 0, flat: Object.assign({}, DATA.flat)});
 const KEY = 'mccoys-fleet-2027.v1';
 let S = {assign: {}, eff: {}, p: DEF(), view: 'charge', dcase: 'scen', exp: {}, expO: {}, rp: {}, rpOn: true};
-function loadState(o) { S = Object.assign(S, o); S.eff = o.eff || {}; S.exp = o.exp || {}; S.expO = o.expO || {}; S.rp = o.rp || {}; S.rpOn = o.rpOn !== false; S.p = Object.assign(DEF(), o.p || {}); if ((o.p || {}).ratesVer !== DATA.ratesVer) { S.p.fuelRate = DATA.fuelRate.slice(); S.p.dcFuelRate = (DATA.dcFuelRate || DATA.fuelRate).slice(); S.p.ratesVer = DATA.ratesVer; } if (!DATA.maintSeason[S.p.maintSeason] && S.p.maintSeason !== 'flat') S.p.maintSeason = 'company'; }
+function loadState(o) { S = Object.assign(S, o); S.eff = o.eff || {}; S.exp = o.exp || {}; S.expO = o.expO || {}; S.rp = o.rp || {}; S.rpOn = o.rpOn !== false; S.p = Object.assign(DEF(), o.p || {}); S.p.flat = Object.assign({}, DEF().flat, (o.p || {}).flat || {}); if ((o.p || {}).ratesVer !== DATA.ratesVer) { S.p.fuelRate = DATA.fuelRate.slice(); S.p.dcFuelRate = (DATA.dcFuelRate || DATA.fuelRate).slice(); S.p.ratesVer = DATA.ratesVer; } if (!DATA.maintSeason[S.p.maintSeason] && S.p.maintSeason !== 'flat') S.p.maintSeason = 'company'; }
 try { const raw = localStorage.getItem(KEY); if (raw) loadState(JSON.parse(raw)); } catch (e) {}
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 

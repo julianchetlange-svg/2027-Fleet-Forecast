@@ -93,7 +93,8 @@ lease['747104'] = 250.0; lease_note['747104'] = 'Holding rental $250/mo'
 lease['747106'] = 150.0; lease_note['747106'] = 'Holding rental $150/mo'
 
 # ---------- flat rates (stores) ----------
-FLAT = {'10K Yard Forklift': 1305.79, "12' Slide Flatbed": 1192.80, "16' Conveyor": 1841.10, "16' Van Body": 1274.35,
+FLAT = {'Car': 608.34,   # Julian, Nov 10
+        '10K Yard Forklift': 1305.79, "12' Slide Flatbed": 1192.80, "16' Conveyor": 1841.10, "16' Van Body": 1274.35,
         "20' Slide Flatbed": 1216.97, "24' Conveyor": 2264.57, "24' TA Flatbed": 1981.47, "24' TA Slide Flatbed": 2489.40,
         "24' Van Body": 1691.42, '3K Yard Forklift': 845.43, '4K Yard Forklift': 935.65, '4-Way Truck Mounted Forklift': 1343.17,
         '6K Yard Forklift': 1007.80, '8K Boxcar Forklift': 1343.23, '8K Yard Forklift': 1262.59, 'Electric Pallet Jack': 201.04,
