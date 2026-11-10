@@ -24,6 +24,19 @@ a['cls'] = a['Asset Template Name'].map(cls)
 a['term'] = a.cls.map({'Truck': 60, 'Trailer': 60, 'Forklift': 84, 'TMFL': 84, 'Equipment': 84})
 a['isd'] = pd.to_datetime(a['Asset Date of Origination'])
 
+# ---------- department reassignments of 900 Corporate assets (Department_Reassignements.xlsx, Nov 10) ----------
+_dr = pd.read_excel(INPUTS + 'department_reassignments.xlsx', dtype=str)
+DEPT_LEVEL = {}
+for _, _r in _dr.iterrows():
+    aid_, dep_ = str(_r['Asset Number']).strip(), str(_r['Revised Department']).strip()
+    code_, name_ = dep_.split(' ', 1)
+    DEPT_LEVEL[code_] = dep_
+    m_ = a['Asset Name'] == aid_
+    if not m_.any(): print('department reassignment: not on roster', aid_); continue
+    if code_ != a.loc[m_, 'Store Number'].iloc[0]:
+        a.loc[m_, 'Store Number'] = code_; a.loc[m_, 'Store Name'] = name_.replace(' Dept', ' Dept').strip(); a.loc[m_, 'Store District'] = 'Headquarters'
+print('department reassignments', {k: int((a['Store Number'] == k).sum()) for k in DEPT_LEVEL})
+
 # ---------- locations ----------
 ACTUAL_FIXED = {'355CD', '355'}
 def district(r):
@@ -436,6 +449,7 @@ for l in out['locations']:
 FLEET_LEVEL = _lvl['735'][0][1]
 # department fuel accounts are not on the Levels tab; codes from Julian (Nov 9). They use the charges format.
 LEVEL.update({'510': '510 Information Services Dept', '530': '530 People Development', '620': '620 Marketing Dept', '740': '740 Risk Management'})
+LEVEL.update(DEPT_LEVEL)   # department level codes from the reassignment list (590 Aviation, 705 Hardlines, 900 Corporate Department, ...)
 for l in out['locations']:
     if l['id'] not in LEVEL: LEVEL[l['id']] = FLEET_LEVEL
     if l['id'] in ('510', '530', '620', '740'): l['name'] = LEVEL[l['id']].split(' ', 1)[1]
