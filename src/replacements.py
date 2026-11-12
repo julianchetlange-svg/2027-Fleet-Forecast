@@ -51,6 +51,9 @@ def build(csv, sales_path, assets, start_year=2027):
     r = pd.read_csv(csv, dtype={'Unit': str, 'Store': str})
     M = {a['id']: a for a in assets}
     out, missing = [], []
+    # pickups that will not be replaced in 2027 (Julian, Nov 12; "599179" taken as 594179, the only pickup on the list ending in 179)
+    NOT_REPLACED = {'599013', '599030', '594179'}
+    r = r[~r.Unit.isin(NOT_REPLACED)]
     for _, x in r.iterrows():
         a = M.get(x.Unit)
         if a is None: missing.append(x.Unit); continue
