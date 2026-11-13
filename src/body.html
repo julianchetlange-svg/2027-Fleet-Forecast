@@ -170,7 +170,8 @@
     <div class="phead"><h2>Method</h2></div>
     <ul class="rules" id="methodList">
       <li><b>Scope.</b> <span id="mScope"></span> Every active asset on the asset roster except 950 Rio Truss. The roster sets location and in-service date. 033 Pharr, 355CD and 355 Pharr Reload sit in Region 05; regional loaner pools (761–768) sit in their regions. 765 (Region 05) and 768 (Region 08) have no assets on the roster, so each carries one fuel-only line at the average of the other pools' fuel (2,879 gal/yr).</li>
-      <li><b>New 15.5K forklift at 359 Burnet Reload.</b> Added from January 2027 (asset 359-NEW-01): owned, $113,000 delivered cost over 84 months ($1,345/month), maintenance at the median of 15.5K forklifts bought 2024 or later, registration &amp; taxes on the new cost, and propane at the average 359/489 forklift (on top of the Distribution forecast).</li>
+      <li><b>New 15.5K forklift at 359 Burnet Reload.</b> Added from January 2027 (asset 359-NEW-01): owned, $113,000 delivered cost over 84 months ($1,345/month), maintenance at the median of 15.5K forklifts bought 2024 or later, registration &amp; taxes on the new cost, and propane already in the 359 forecast.</li>
+      <li><b>Planned transfer.</b> 13K forklift 386045 moves from 359 Burnet Reload to 353 Dayton in February 2027, after the new 15.5K forklift is delivered. Its costs follow it from February; propane stays with each site's forecast. This is part of the baseline.</li>
       <li><b>New store 122 Canyon Lake (Region 07).</b> Opens mid-June 2027; its 9 planned assets (2 24' TA Flatbeds, 2 TMFLs, 3 6K forklifts, 1 8K forklift, 1 pickup) are charged from July. Miles, fuel and propane use the Region 07 median for each type; depreciation, maintenance and registration, taxes, Geotab and Lytx use the median of same-type units bought 2024 or later.</li>
       <li><b>Cost rules.</b> Stores (Regions 01–08), regional loaner pools (761–768) and HQ departments (730, 735, 510, 530, 590, 620, 705, 740): fuel + flat rate, plus $0.425 per mile for trucks (not LD vehicles: pickups, cars and cargo vans). Actual cost (Distribution 353/356/359/489, Millwork 450, 355CD and 355 Reload): fuel + maintenance + depreciation + lease + registration, taxes, Geotab and Lytx.</li>
       <li><b>Rentals.</b> Truck and forklift rental invoices (work order categories "Truck - Rental" and "Forklift - Rental", Oct 2025–Sep 2026) are taken out of maintenance and shown as Truck rental and Forklift rental, spread evenly by month and kept with the unit they were charged to. Like maintenance, they count in location charges only at actual-cost locations. The recurring forklift rental at 011 South Austin was turned in, so it is not carried into 2027.</li>
@@ -297,10 +298,10 @@ function run(assign) {
   const lpLost = {}; for (const l in lpPool) if (!fkAt[l]) lpLost[l] = lpPool[l];
   return {rows, unalloc, lpLost};
 }
-function runEff(assign) {
+function runEff(assign, eff = S.eff) {
   if (!Object.keys(assign).length) return run({});
   const runs = [], cache = {};
-  for (let i = 0; i < 12; i++) { const ai = {}; for (const k in assign) if ((S.eff[k] || 0) <= i) ai[k] = assign[k]; const key = JSON.stringify(ai); runs.push(cache[key] || (cache[key] = run(ai))); }
+  for (let i = 0; i < 12; i++) { const ai = {}; for (const k in assign) if ((eff[k] || 0) <= i) ai[k] = assign[k]; const key = JSON.stringify(ai); runs.push(cache[key] || (cache[key] = run(ai))); }
   if (runs.every(r => r === runs[0])) return runs[0];
   const end = runs[11];
   const rows = end.rows.map((r, k) => {
@@ -378,7 +379,8 @@ function drawCats(host, cats, base, scen) {
 
 /* ---------- render ---------- */
 let BASE, SCEN, BL = {}, SL = {};
-function recompute() { BASE = run({}); SCEN = runEff(S.assign);
+const XA = {}, XE = {}; for (const [k, v] of Object.entries(DATA.xfers || {})) if (AMAP[k]) { XA[k] = v.to; XE[k] = v.m; }   // planned transfers are part of the baseline
+function recompute() { BASE = Object.keys(XA).length ? runEff(XA, XE) : run({}); SCEN = runEff(Object.assign({}, XA, S.assign), Object.assign({}, XE, S.eff));
   BL = {ch: byLoc(BASE, 'charge'), op: byLoc(BASE, 'op')}; SL = {ch: byLoc(SCEN, 'charge'), op: byLoc(SCEN, 'op')}; }
 const changedIds = () => Object.keys(S.assign).filter(k => S.assign[k] && AMAP[k] && S.assign[k] !== AMAP[k].loc);
 function renderHeader() {

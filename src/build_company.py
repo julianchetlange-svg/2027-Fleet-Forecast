@@ -355,6 +355,13 @@ planned.append(dict(id='359-NEW-01', loc='359', type=_ty, cls='Forklift', make='
     lease=0.0, flat=FLAT.get(_ty), maint=round(med(_newer, 'maint') or med(_same, 'maint'), 2), tire=0.0, rentT=0.0, rentF=0.0,
     miles=0.0, gal=0.0, gpm=0.0, lp=round(_lpu, 1), reg=round(_cost / 1500, 4), tel=0.0, geo=0.0, lytx=0.0, galW=None, lpW=_lpw, dc=1,
     flags=['Planned addition: new 15.5K Yard Forklift at 359 from January 2027. Owned, $113,000 / 84 months; maintenance is the median of 15.5K forklifts bought 2024 or later; propane is the average 359/489 forklift on the Distribution forecast pattern, added on top of the forecast.']))
+# 386045 (13K forklift) transfers from 359 to 353 Dayton the month after the new forklift is delivered (Julian, Nov 13).
+# The 359 propane forecast already includes the new forklift: it takes 386045's propane share, so 359 stays on its forecast and 353 is unchanged.
+_m = df['id'] == '386045'
+df.loc[_m, 'lp'] = 0.0; df.loc[_m, 'lpW'] = None
+df.loc[_m, 'flags'] = df.loc[_m, 'flags'].apply(lambda f: list(f) + ['Planned transfer: moves from 359 Burnet Reload to 353 Dayton in February 2027, after the new 15.5K forklift is delivered. Propane stays with the 359 and 353 forecasts.'])
+XFERS = {'386045': dict(to='353', m=1)}
+planned[-1]['flags'] = ['Planned addition: new 15.5K Yard Forklift at 359 from January 2027. Owned, $113,000 / 84 months; maintenance is the median of 15.5K forklifts bought 2024 or later; propane is already in the 359 forecast (it takes the share of 386045, which moves to 353).']
 print('planned 359 forklift: dep', round(_cost / 84, 2), 'maint', planned[-1]['maint'], 'lp', round(_lpu))
 
 # ---------- loaner pools 765 and 768: no roster assets, so fuel is estimated from the other pools ----------
@@ -478,6 +485,7 @@ print('adaptive: accounts', len(_acc), 'levels', len(LEVEL), 'charge-format locs
 # ---------- 2027 replacements and sale proceeds (Nov 8) ----------
 import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import replacements as _R
+out['xfers'] = XFERS
 out['repl'], _miss, _s = _R.build(INPUTS + 'replacements_2027.csv', INPUTS + 'remarketing.xlsx', out['assets'])
 out['replMissing'] = _miss
 print('replacements', len(out['repl']), 'not on roster', _miss, 'sales used', len(_s))
