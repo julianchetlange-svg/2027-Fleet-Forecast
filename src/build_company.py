@@ -204,6 +204,14 @@ for _, r in a.iterrows():
             rec['feeNote'] = f'Registration/taxes estimated (no original value in fee file): cost ${cost:,.0f}, {how}'
     else:
         rec['reg'] = 0.0; rec['tel'] = 0.0; rec['geo'] = 0.0; rec['lytx'] = 0.0
+    # delivered (original) cost: fee file original value; otherwise same-type peers of the closest age, or depreciation x term (Nov 13)
+    _ov = float(fee.loc[aid, 'Asset Original Value']) if aid in fee.index and pd.notna(fee.loc[aid, 'Asset Original Value']) else 0.0
+    if _ov > 0: rec['cost'], rec['costSrc'] = round(_ov, 2), 'Original value (fee file)'
+    else:
+        _pv, _how = peer_cost(r['Asset Template Name'], r.isd.year)
+        if _pv: rec['cost'], rec['costSrc'] = round(_pv, 2), 'Estimated: ' + _how
+        elif owned and depm: rec['cost'], rec['costSrc'] = round(depm * int(r.term), 2), 'Estimated: depreciation x term'
+        else: rec['cost'], rec['costSrc'] = None, 'Not available'
     if c == 'Truck':
         src = '692009' if aid == '626003' else aid
         if src in mpv.index:
@@ -313,7 +321,7 @@ df['flags'] = df.apply(flags, axis=1)
 FUEL27 = [5.198, 5.016, 4.834, 4.590, 4.455, 4.320, 4.185, 4.095, 4.005, 3.915, 3.825, 3.735]
 LP27 = [1.624, 1.637, 1.626, 1.610, 1.604, 1.585, 1.591, 1.578, 1.567, 1.540, 1.524, 1.525]
 cols = ['id', 'loc', 'type', 'cls', 'make', 'own', 'status', 'isd', 'term', 'dep', 'depElig', 'depSrc', 'lease', 'flat',
-        'maint', 'tire', 'rentT', 'rentF', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'geo', 'lytx', 'flags', 'galW', 'lpW', 'dc']
+        'maint', 'tire', 'rentT', 'rentF', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'geo', 'lytx', 'flags', 'galW', 'lpW', 'dc', 'cost', 'costSrc']
 # ---------- planned new store: 122 Canyon Lake (Region 07), opens mid-June 2027, costs from July ----------
 NEW_LOC = dict(id='122', name='Canyon Lake', district='Region 07', kind='Store')
 NEW_FLEET = [("24' TA Flatbed", 2), ('Truck Mounted Forklift', 2), ('6K Yard Forklift', 3), ('8K Yard Forklift', 1), ('Pickup', 1)]
@@ -337,7 +345,7 @@ for ty, n in NEW_FLEET:
     term = int(df.loc[same, 'term'].iloc[0])
     for k in range(n):
         planned.append(dict(id=f'122-NEW-{len(planned) + 1:02d}', loc='122', type=ty, cls=cls, make='Planned', own='Owned', status='Planned',
-            isd='2027-07-01', term=term, dep=round(dep, 2), depElig=act, depSrc='Estimate: median of same-type units bought 2024 or later',
+            isd='2027-07-01', term=term, dep=round(dep, 2), depElig=act, depSrc='Estimate: median of same-type units bought 2024 or later', cost=round(dep * term, 2), costSrc='Planned: median depreciation x term',
             lease=0.0, flat=FLAT.get(ty), maint=round(maint, 2), miles=round(miles, 1), gal=round(miles * gpm, 1), gpm=gpm, lp=round(lp, 1),
             reg=round(reg, 4), tel=geo + lytx, geo=geo, lytx=lytx, act=act, galW=None, lpW=None, dc=0,
             flags=[f'Planned: 122 Canyon Lake opens mid-June 2027; costs start July. Miles, fuel and propane are the '
@@ -351,7 +359,7 @@ _newer = _same & (pd.to_datetime(df['isd']) >= '2024-01-01')
 _grp = (df.cls == 'Forklift') & df['loc'].isin(['359', '489'])
 _lpu = float(df.loc[_grp, 'lp'].mean()); _lpw = df.loc[_grp, 'lpW'].dropna().iloc[0] if df.loc[_grp, 'lpW'].notna().any() else None
 planned.append(dict(id='359-NEW-01', loc='359', type=_ty, cls='Forklift', make='Planned', own='Owned', status='Planned',
-    isd='2027-01-01', term=84, dep=round(_cost / 84, 2), depElig=[1] * 12, depSrc='Planned: $113,000 delivered cost / 84 months',
+    isd='2027-01-01', term=84, dep=round(_cost / 84, 2), depElig=[1] * 12, depSrc='Planned: $113,000 delivered cost / 84 months', cost=_cost, costSrc='Planned: replacement cost',
     lease=0.0, flat=FLAT.get(_ty), maint=round(med(_newer, 'maint') or med(_same, 'maint'), 2), tire=0.0, rentT=0.0, rentF=0.0,
     miles=0.0, gal=0.0, gpm=0.0, lp=round(_lpu, 1), reg=round(_cost / 1500, 4), tel=0.0, geo=0.0, lytx=0.0, galW=None, lpW=_lpw, dc=1,
     flags=['Planned addition: new 15.5K Yard Forklift at 359 from January 2027. Owned, $113,000 / 84 months; maintenance is the median of 15.5K forklifts bought 2024 or later; propane is the average 359/489 forklift on the Distribution forecast pattern, added on top of the forecast.']))

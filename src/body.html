@@ -771,14 +771,15 @@ function exportExcel() {
       d === 'OUT' ? 'Cost leaves the plan' : d === 'TERM' ? 'Work passes to remaining units at ' + a.loc : noRate(a, d) ? 'No store flat rate for this type' : '']); }
   if (!ids.length) ch.push(['No changes in this scenario']);
   XLSX.utils.book_append_sheet(wb, mkSheet(ch, [7, 8, 9, 10, 11, 12, 13, 14], [10, 24, 10, 9, 8, 13, 11, 15, 15, 14, 15, 15, 14, 16, 16, 36]), 'Changes');
-  const as = [['Asset', 'Type', 'Class', 'Owned', 'District', 'Baseline location', 'Scenario location', 'Miles (baseline)', 'Miles (scenario)', ...CATS_CH.map(c => c + ' (scenario)'), 'Baseline charges', 'Scenario charges', 'Charges change', 'Baseline operating', 'Scenario operating', 'Operating change', 'Notes']];
+  const as = [['Asset', 'Type', 'Class', 'Owned', 'Delivered cost', 'Delivered cost source', '2027 replacement month', 'Replacement delivered cost', 'District', 'Baseline location', 'Scenario location', 'Miles (baseline)', 'Miles (scenario)', ...CATS_CH.map(c => c + ' (scenario)'), 'Baseline charges', 'Scenario charges', 'Charges change', 'Baseline operating', 'Scenario operating', 'Operating change', 'Notes']];
   SCEN.rows.forEach((rs, k) => { const rb = BASE.rows[k], a = rs.a; const b = assetTotal(rb, 'charge'), s = assetTotal(rs, 'charge'), ob = assetTotal(rb, 'op'), os = assetTotal(rs, 'op');
-    as.push([a.id, a.type, a.cls, a.own, LOC[a.loc].district, a.loc, locShort(rs.loc), a.cls === 'Truck' ? Math.round(rb.miles) : null, a.cls === 'Truck' ? Math.round(rs.miles) : null, ...CATS_CH.map(c => r2(sum12(rs.ch[c]))), r2(b), r2(s), r2(s - b), r2(ob), r2(os), r2(os - ob), a.flags.join('; ')]); });
-  const mcols = []; for (let c = 9; c < 9 + CATS_CH.length + 6; c++) mcols.push(c);
+    const rq = S.rpOn && RMAP[a.id] ? rpOf(a.id) : null;
+    as.push([a.id, a.type, a.cls, a.own, a.cost != null ? a.cost : null, a.costSrc || '', rq ? MONTHS[rq.m] : '', rq ? rq.cost : null, LOC[a.loc].district, a.loc, locShort(rs.loc), a.cls === 'Truck' ? Math.round(rb.miles) : null, a.cls === 'Truck' ? Math.round(rs.miles) : null, ...CATS_CH.map(c => r2(sum12(rs.ch[c]))), r2(b), r2(s), r2(s - b), r2(ob), r2(os), r2(os - ob), a.flags.join('; ')]); });
+  const mcols = [4, 7]; for (let c = 13; c < 13 + CATS_CH.length + 6; c++) mcols.push(c);
   renderRepl(); const ru = document.getElementById('tRpU')._csv || []; const rpAll = [ru[0], ...REPL.map(r => { const x = rpCalc(r.id), q = x.r, a = x.a; return [a.id, a.type, q.fleet, a.loc, LOC[a.loc].district, q.leased ? 'Leased' : 'Owned', q.oem, q.year, q.measure, q.status, MONTHS[q.m], q.cost, r2(a.dep * a.depElig[Math.min(q.m + 1, 11)] + a.lease), r2(q.newDep), r2(x.net), smLabel(x.sm), q.leased ? null : q.price, q.leased ? '' : procCat(a.type), q.basis, q.leased ? null : r2(x.book), q.leased ? null : r2(x.gain), q.note]; })];
   rpAll.splice(1, 0); rpAll.push([]); rpAll.push(['Included in forecast', S.rpOn ? 'Yes' : 'No']);
   XLSX.utils.book_append_sheet(wb, mkSheet(rpAll, [11, 12, 13, 14, 16, 19, 20], [10, 24, 11, 8, 12, 8, 12, 6, 14, 10, 10, 13, 14, 13, 14, 10, 13, 26, 30, 14, 13, 40]), 'Replacements');
-  XLSX.utils.book_append_sheet(wb, mkSheet(as, mcols, [10, 24, 9, 8, 13, 10, 12, 10, 10, ...CATS_CH.map(() => 13), 14, 14, 13, 14, 14, 13, 50]), 'Assets');
+  XLSX.utils.book_append_sheet(wb, mkSheet(as, mcols, [10, 24, 9, 8, 13, 34, 12, 13, 13, 10, 12, 10, 10, ...CATS_CH.map(() => 13), 14, 14, 13, 14, 14, 13, 50]), 'Assets');
   const mo = [['View', 'District', 'Location', 'Case', ...MONTHS, '2027']];
   for (const [view, key] of [['Location charges', 'ch'], ['Operating cost', 'op']]) for (const d of DISTS) for (const l of LOCS_BY_D[d]) {
     const b = BL[key][l.id] ? BL[key][l.id].byM : zero12(), s = SL[key][l.id] ? SL[key][l.id].byM : zero12(), dd = s.map((x, i) => x - b[i]);
