@@ -344,6 +344,19 @@ for ty, n in NEW_FLEET:
                    + ('Region 07' if use is not None and (use & r7).any() else 'company store') + ' median for this type; depreciation, maintenance and fees are the median of same-type units bought 2024 or later.']))
 print('planned assets', len(planned), [(p['type'], p['miles'], p['gal'], p['lp'], p['dep'], p['maint'], p['reg']) for p in planned[::1]])
 
+# ---------- planned addition: 15.5K Yard Forklift at 359 Burnet Reload from January 2027 (Julian, Nov 13) ----------
+_ty = '15.5K Yard Forklift'; _same = df['type'] == _ty
+_cost = 113000.0   # replacement cost for a 15.5K forklift (Julian, Nov 8)
+_newer = _same & (pd.to_datetime(df['isd']) >= '2024-01-01')
+_grp = (df.cls == 'Forklift') & df['loc'].isin(['359', '489'])
+_lpu = float(df.loc[_grp, 'lp'].mean()); _lpw = df.loc[_grp, 'lpW'].dropna().iloc[0] if df.loc[_grp, 'lpW'].notna().any() else None
+planned.append(dict(id='359-NEW-01', loc='359', type=_ty, cls='Forklift', make='Planned', own='Owned', status='Planned',
+    isd='2027-01-01', term=84, dep=round(_cost / 84, 2), depElig=[1] * 12, depSrc='Planned: $113,000 delivered cost / 84 months',
+    lease=0.0, flat=FLAT.get(_ty), maint=round(med(_newer, 'maint') or med(_same, 'maint'), 2), tire=0.0, rentT=0.0, rentF=0.0,
+    miles=0.0, gal=0.0, gpm=0.0, lp=round(_lpu, 1), reg=round(_cost / 1500, 4), tel=0.0, geo=0.0, lytx=0.0, galW=None, lpW=_lpw, dc=1,
+    flags=['Planned addition: new 15.5K Yard Forklift at 359 from January 2027. Owned, $113,000 / 84 months; maintenance is the median of 15.5K forklifts bought 2024 or later; propane is the average 359/489 forklift on the Distribution forecast pattern, added on top of the forecast.']))
+print('planned 359 forklift: dep', round(_cost / 84, 2), 'maint', planned[-1]['maint'], 'lp', round(_lpu))
+
 # ---------- loaner pools 765 and 768: no roster assets, so fuel is estimated from the other pools ----------
 pool_gal = df[df['loc'].isin(POOL)].groupby('loc').gal.sum()
 POOL_EST = float(pool_gal.mean())
