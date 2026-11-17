@@ -16,3 +16,14 @@ Open `index.html` (or the GitHub Pages site). Scenario changes are kept in the v
 - `src/head.html`, `src/body.html`: dashboard source; `src/build_html.py` assembles `index.html`.
 
 Method and data flags are on the dashboard's **Assumptions & data** tab.
+
+## Accounting review (Nov 2026)
+
+`accounting-review/Fleet_2027_Budget_Variance_Review.xlsx` revises the 2027 maintenance, registration & inspection, and rental lines that accounting flagged against the FY2026 outlook ($15.67M). Revised 2027 total: **$15,163,631** (−$511K, −3.3% vs 2026), split Mfg/DC (353, 356, 359, 489, 450, 355CD, 355 Reload) $4.32M and flat rate $10.84M.
+
+- Maintenance: 2026 outlook less replacement savings, plus store 122 and the new 359 forklift.
+- Registration & inspections: held at 2026; ad valorem tax ($749K) belongs in the property-tax account.
+- Rentals: Jan–Oct 2026 rental invoices (`accounting-review/inputs/2026_Rentals_Jan-Oct.xlsx`) × 12/10, less 011 South Austin (turned in), 950 Rio Truss and the 359 Burnet forklift rental (unit purchased).
+- Fuel stays on the 2027 price curve.
+
+Rebuild with `python3 accounting-review/variance_xlsx.py`. Not yet applied to the dashboard.
