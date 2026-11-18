@@ -11,6 +11,17 @@ os.makedirs(INPUTS, exist_ok=True)
 a = pd.read_excel(A + '76d1ece1-Current_Assets_7.xlsx', header=1, dtype=str)
 a = a[a['Store Number'] != '950'].copy()          # Rio Truss excluded
 a['Store District'] = a['Store District'].fillna('')
+# Units on the depreciation books but missing from the roster export (Julian, Nov 18): 758002 is at 057 Tomball, 755026 at 355CD
+_add = []
+for _aid, _loc, _ty, _mk, _sn, _isd in [('758002', '057', "24' TA Flatbed", 'International', '1HTEKTAR0VS313952', '2026-03-01'),
+                                       ('755026', '355CD', 'Tractor TA', 'Kenworth', '3WKZDP9X7RF359284', '2023-10-21')]:
+    if (a['Asset Name'] == _aid).any(): continue
+    _ref = a[a['Store Number'] == _loc].iloc[0]
+    _add.append({'Store Number': _loc, 'Store Name': _ref['Store Name'], 'Store District': _ref['Store District'], 'Asset Name': _aid,
+                 'Asset Template Name': _ty, 'Asset Manufacturer Name': _mk, 'Asset Serial Number': _sn, 'Asset Ownership': 'Company Owned',
+                 'Asset Status': 'Active', 'Asset Date of Origination': _isd})
+a = pd.concat([a, pd.DataFrame(_add)], ignore_index=True)
+ADDED_FROM_BOOKS = [r['Asset Name'] for r in _add]
 TRUCK = {'Tractor TA', 'Tractor SA', 'Pickup', "24' TA Flatbed", "20' Slide Flatbed", "12' Slide Flatbed", "24' Conveyor",
          "16' Conveyor", "16' Van Body", "24' Van Body", "24' TA Slide Flatbed", 'Car', 'Cargo Van'}
 EQUIP = {'Golf Cart', 'Scissor Lift', 'Light Tower', 'Sweeper', 'Order Picker', 'Electric Pallet Jack'}
@@ -317,6 +328,14 @@ def flags(r):
     if r.id == '747104': f.append('Owned wrap depreciation ($132.37/mo) excluded')
     return f
 df['flags'] = df.apply(flags, axis=1)
+# 758002 / 755026 are not in the fee file: registration, Geotab and Lytx are the median of same-type units bought 2023 or later
+for _aid in ADDED_FROM_BOOKS:
+    _m = df['id'] == _aid; _ty = df.loc[_m, 'type'].iloc[0]
+    _peer = (df['type'] == _ty) & (pd.to_datetime(df['isd']) >= '2023-01-01') & df['id'].isin(HASFEE)
+    for _c in ('reg', 'geo', 'lytx'): df.loc[_m, _c] = round(float(df.loc[_peer, _c].median()), 4)
+    df.loc[_m, 'tel'] = df.loc[_m, 'geo'] + df.loc[_m, 'lytx']
+    df.loc[_m, 'flags'] = df.loc[_m, 'flags'].apply(lambda f: [x for x in f if 'pending company-wide fee file' not in x] + [
+        'Added from the depreciation books (missing from the roster export; Julian, Nov 18). Registration, Geotab and Lytx are the median of same-type units bought 2023 or later.'])
 
 FUEL27 = [5.198, 5.016, 4.834, 4.590, 4.455, 4.320, 4.185, 4.095, 4.005, 3.915, 3.825, 3.735]
 LP27 = [1.624, 1.637, 1.626, 1.610, 1.604, 1.585, 1.591, 1.578, 1.567, 1.540, 1.524, 1.525]
@@ -440,6 +459,20 @@ print('fuel by location: target', FUEL_SRC['total'], 'assigned', round(sum(after
 _dt = pd.read_excel(INPUTS + 'depreciation_type.xlsx', header=4)
 out['depType'] = {str(k).strip(): str(v).strip() for k, v in zip(_dt.iloc[:, 0], _dt.iloc[:, 1]) if str(k).strip() not in ('', 'nan')}
 print('depreciation lines', sorted(set(out['depType'].values())))
+# ---------- depreciation on the books for assets not on the fleet roster (Sep 2026 actual depreciation; Julian, Nov 18) ----------
+# Mostly Chameleon rolling tarps at the DCs, plus wraps/refurbs and a few units no longer on the roster. Actual expense only:
+# no flat rate, fuel or maintenance. Each line runs until its estimated end (start estimated from the BA number, 60/84-month life).
+_bk = pd.read_csv(INPUTS + 'book_depreciation_not_on_roster.csv', dtype={'id': str, 'loc_code': str})
+for _, r in _bk.iterrows():
+    ty = 'Book depreciation - ' + r.dep_line.replace('Depreciation - ', '')
+    out['depType'][ty] = r.dep_line
+    elig = [int(r[f'm{k}']) for k in range(1, 13)]
+    out['assets'].append(dict(id=f"BOOK-{r.ba}", loc=r.loc_code, type=ty, cls='Equipment', make='Book only', own='Owned', status='Book only',
+        isd=str(r.start), term=84 if 'Forklift' in r['cat'] else 60, dep=round(float(r.amt), 2), depElig=elig, depSrc='Sep 2026 actual depreciation',
+        lease=0.0, flat=None, maint=0.0, tire=0.0, rentT=0.0, rentF=0.0, miles=0.0, gal=0.0, gpm=0.0, lp=0.0, reg=0.0, tel=0.0, geo=0.0, lytx=0.0,
+        galW=None, lpW=None, dc=0, cost=0.0, costSrc='Book depreciation only (not a fleet unit)',
+        flags=[f"Book depreciation only: {r.desc} ({r.cc}). Not on the fleet roster; actual expense only. Estimated to end {r.end}."]))
+print('book depreciation lines', len(_bk), '2027 $', round(sum(r.amt * r.m27 for _, r in _bk.iterrows())))
 
 # ---------- maintenance GL lines by asset type (Maintenace_Type.xlsx, Nov 9) ----------
 _mt = pd.read_excel(INPUTS + 'maintenance_type.xlsx', header=4)

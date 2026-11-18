@@ -577,7 +577,7 @@ function renderAssumptions() {
     arr.forEach((v, i) => { const lab = el('label', {text: MONTHS[i]}); const inp = el('input', {type: 'number', step: '0.001', id: key + i, value: v}); inp.addEventListener('change', () => { const x = parseFloat(inp.value); if (!isNaN(x) && x >= 0) { S.p[key][i] = x; changed('Rate updated'); } }); lab.append(inp); g.append(lab); }); };
   grid('gFuel', p.fuelRate, 'fuelRate'); grid('gLp', p.lpRate, 'lpRate'); grid('gDcFuel', p.dcFuelRate, 'dcFuelRate'); grid('gDcLp', p.dcLpRate, 'dcLpRate');
   const tf = document.getElementById('tFlat'); if (!tf.childElementCount) {
-    const types = [...new Set(ASSETS.map(a => a.type))].sort();
+    const types = [...new Set(ASSETS.filter(a => a.status !== 'Book only').map(a => a.type))].sort();
     tf.innerHTML = '<thead><tr><th>Asset type</th><th class="n">At stores &amp; pools</th><th class="n">$/month</th></tr></thead>'; const tb = el('tbody');
     types.forEach((ty, i) => { const atStores = ASSETS.filter(a => a.type === ty && FLATK.has(LOC[a.loc].kind)).length; const tr = el('tr'); tr.innerHTML = `<td>${esc(ty)}</td><td class="n">${atStores}</td><td class="n"></td>`; const inp = el('input', {type: 'number', step: '0.01', id: 'flat' + i, 'aria-label': 'Flat rate ' + ty, placeholder: 'none'}); inp.style.cssText = 'width:96px;padding:4px 6px;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);text-align:right'; if (p.flat[ty] != null) inp.value = p.flat[ty]; inp.dataset.t = ty; inp.addEventListener('change', () => { const x = parseFloat(inp.value); if (inp.value === '') { delete S.p.flat[ty]; changed('Flat rate cleared'); } else if (!isNaN(x) && x >= 0) { S.p.flat[ty] = x; changed('Flat rate updated'); } }); tr.lastChild.append(inp); tb.append(tr); });
     tf.append(tb);
@@ -590,7 +590,7 @@ function renderAssumptions() {
     ASSETS.forEach(a => a.flags.filter(f => f !== PEND).forEach(f => { const tr = el('tr'); tr.innerHTML = `<td><b>${esc(a.id)}</b></td><td>${esc(a.loc)}</td><td>${esc(a.type)}</td><td style="white-space:normal">${esc(f)}</td>`; tb.append(tr); }));
     tg.append(tb);
   }
-  document.getElementById('mScope').textContent = `${f0.format(ASSETS.length)} assets at ${LOCS.length} locations.`;
+  document.getElementById('mScope').textContent = `${f0.format(ASSETS.filter(a => a.status !== 'Book only').length)} assets at ${LOCS.length} locations, plus ${ASSETS.filter(a => a.status === 'Book only').length} book-only depreciation lines.`;
 }
 function syncSegs() { document.querySelectorAll('[data-seg]').forEach(g => { const k = g.dataset.seg; g.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(S[k] === b.dataset.val))); }); }
 function rpCalc(id) {   // per-unit 2027 effect of one replacement (independent of the include toggle)
@@ -834,6 +834,6 @@ addEventListener('hashchange', route);
 const setTabsH = () => { const n = document.querySelector('.tabs'); if (n) document.documentElement.style.setProperty('--tabsH', n.offsetHeight + 'px'); };
 setTabsH(); addEventListener('resize', setTabsH);
 let rT; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(renderOverview, 150); });
-document.getElementById('hdrSub').textContent = `Regions 01–08, Distribution, Millwork and Headquarters · ${LOCS.length} locations · ${f0.format(ASSETS.length)} assets · baseline vs. scenario`;
+document.getElementById('hdrSub').textContent = `Regions 01–08, Distribution, Millwork and Headquarters · ${LOCS.length} locations · ${f0.format(ASSETS.filter(a => a.status !== 'Book only').length)} assets · baseline vs. scenario`;
 renderAll(); route();
 </script>

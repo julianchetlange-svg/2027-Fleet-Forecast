@@ -27,3 +27,12 @@ Method and data flags are on the dashboard's **Assumptions & data** tab.
 - Fuel stays on the 2027 price curve.
 
 Rebuild with `python3 accounting-review/variance_xlsx.py`. Not yet applied to the dashboard.
+
+## Depreciation check against 2026 actuals (Nov 18)
+
+Jan–Sep 2026 actual depreciation (BA depreciation detail) ran $1.145M/month in January down to $1.092M in September ($10.07M year to date). Assets on the roster match the forecast within about 1%. Added:
+
+- **758002** (2027 International HV607, 24' TA Flatbed, 057 Tomball) and **755026** (2024 Kenworth T880 tractor, 355CD): on the depreciation books but missing from the roster export. Added as fleet units; registration, Geotab and Lytx use same-type medians.
+- **77 book-only depreciation lines** (`inputs/book_depreciation_not_on_roster.csv`, from the Sep 2026 file): mostly Chameleon rolling tarps at 353/356/359, plus wraps/refurbs and units no longer on the roster. Actual expense only (no flat rate, fuel or maintenance); each runs to its estimated end date (start estimated from the BA number, 60/84-month life). 2027: $217,504.
+
+2027 depreciation is now $11.92M (was $11.64M); actual cost $36.26M, location charges $35.96M.
