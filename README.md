@@ -35,4 +35,6 @@ Jan–Sep 2026 actual depreciation (BA depreciation detail) ran $1.145M/month in
 - **758002** (2027 International HV607, 24' TA Flatbed, 057 Tomball) and **755026** (2024 Kenworth T880 tractor, 355CD): on the depreciation books but missing from the roster export. Added as fleet units; registration, Geotab and Lytx use same-type medians.
 - **77 book-only depreciation lines** (`inputs/book_depreciation_not_on_roster.csv`, from the Sep 2026 file): mostly Chameleon rolling tarps at 353/356/359, plus wraps/refurbs and units no longer on the roster. Actual expense only (no flat rate, fuel or maintenance); each runs to its estimated end date (start estimated from the BA number, 60/84-month life). 2027: $217,504.
 
-2027 depreciation is now $11.92M (was $11.64M); actual cost $36.26M, location charges $35.96M.
+**Roster update (Nov 18):** switched to `inputs/roster_current_assets_15.xlsx` (column K = delivery date). New units 758002, 758006, 480009, 381071 and 753047 (fees from same-type medians where not in the fee file). 758006 (Tractor TA, 355) was delivered Nov 18, 2026 to replace 747106 (lost an engine), so 747106 and its 2027 replacement are out. 750046 is being sold. 755026 is on risk hold after an accident and carries depreciation only.
+
+2027 depreciation is now $11.91M (was $11.64M); actual cost $36,248,570, location charges $35,951,164; replacements 76 units, $5,624,000.

@@ -8,20 +8,16 @@ INPUTS = OUT + 'inputs/'   # user-supplied fill-ins (depreciation, leases, fees)
 os.makedirs(INPUTS, exist_ok=True)
 
 # ---------- roster ----------
-a = pd.read_excel(A + '76d1ece1-Current_Assets_7.xlsx', header=1, dtype=str)
+# Roster: Current_Assets_15 (Nov 18). Column K (Date of Origination) is the delivery date.
+a = pd.read_excel(INPUTS + 'roster_current_assets_15.xlsx', header=1, dtype=str).drop(columns=['Asset Location', 'Asset Original Value'], errors='ignore')
+_old = set(pd.read_excel(A + '76d1ece1-Current_Assets_7.xlsx', header=1, dtype=str)['Asset Name'])
 a = a[a['Store Number'] != '950'].copy()          # Rio Truss excluded
 a['Store District'] = a['Store District'].fillna('')
-# Units on the depreciation books but missing from the roster export (Julian, Nov 18): 758002 is at 057 Tomball, 755026 at 355CD
-_add = []
-for _aid, _loc, _ty, _mk, _sn, _isd in [('758002', '057', "24' TA Flatbed", 'International', '1HTEKTAR0VS313952', '2026-03-01'),
-                                       ('755026', '355CD', 'Tractor TA', 'Kenworth', '3WKZDP9X7RF359284', '2023-10-21')]:
-    if (a['Asset Name'] == _aid).any(): continue
-    _ref = a[a['Store Number'] == _loc].iloc[0]
-    _add.append({'Store Number': _loc, 'Store Name': _ref['Store Name'], 'Store District': _ref['Store District'], 'Asset Name': _aid,
-                 'Asset Template Name': _ty, 'Asset Manufacturer Name': _mk, 'Asset Serial Number': _sn, 'Asset Ownership': 'Company Owned',
-                 'Asset Status': 'Active', 'Asset Date of Origination': _isd})
-a = pd.concat([a, pd.DataFrame(_add)], ignore_index=True)
-ADDED_FROM_BOOKS = [r['Asset Name'] for r in _add]
+# 747106 (Tractor TA, 355): its replacement 758006 was delivered Nov 18, 2026 (truck lost an engine; Julian, Nov 18), so it is out of the 2027 fleet.
+# 750046 is being sold (already off this roster). 755026 is on risk hold after an accident: depreciation only (book-only lines).
+a = a[~a['Asset Name'].isin(['747106'])].copy()
+# units new since the Current_Assets_7 roster that are not in the fee file get same-type median fees (below)
+ADDED_FROM_BOOKS = sorted(set(a['Asset Name']) - _old)
 TRUCK = {'Tractor TA', 'Tractor SA', 'Pickup', "24' TA Flatbed", "20' Slide Flatbed", "12' Slide Flatbed", "24' Conveyor",
          "16' Conveyor", "16' Van Body", "24' Van Body", "24' TA Slide Flatbed", 'Car', 'Cargo Van'}
 EQUIP = {'Golf Cart', 'Scissor Lift', 'Light Tower', 'Sweeper', 'Order Picker', 'Electric Pallet Jack'}
@@ -328,14 +324,26 @@ def flags(r):
     if r.id == '747104': f.append('Owned wrap depreciation ($132.37/mo) excluded')
     return f
 df['flags'] = df.apply(flags, axis=1)
-# 758002 / 755026 are not in the fee file: registration, Geotab and Lytx are the median of same-type units bought 2023 or later
-for _aid in ADDED_FROM_BOOKS:
+# 758006 (Tractor TA, 355) delivered Nov 18, 2026, replacing 747106: not yet in the depreciation file, so depreciation is
+# the roster original value / 60; maintenance is the median of Tractor TAs bought 2024 or later (new unit).
+_ov15 = pd.read_excel(INPUTS + 'roster_current_assets_15.xlsx', header=1, dtype=str).set_index('Asset Name')['Asset Original Value']
+_m = df['id'] == '758006'
+if _m.any():
+    _c = float(_ov15['758006']); _t = (df['type'] == 'Tractor TA') & (pd.to_datetime(df['isd']) >= '2024-01-01') & (df['maint'] > 0)
+    df.loc[_m, 'dep'] = round(_c / 60, 2); df.loc[_m, 'depElig'] = pd.Series([[1] * 12], index=df.index[_m])
+    df.loc[_m, 'depSrc'] = 'Roster original value / 60'; df.loc[_m, 'cost'] = _c; df.loc[_m, 'costSrc'] = 'Original value (roster)'
+    df.loc[_m, 'maint'] = round(float(df.loc[_t, 'maint'].median()), 2)
+    df.loc[_m, 'flags'] = df.loc[_m, 'flags'].apply(lambda f: [x for x in f if 'awaiting input' not in x and 'No miles or fuel history' not in x] + ['Delivered Nov 18, 2026, replacing 747106 (lost an engine). Depreciation is original value / 60; maintenance is the median of Tractor TAs bought 2024 or later.'])
+# Units new on the Nov 18 roster and not in the fee file: registration, Geotab and Lytx are the median of same-type units within 2 years of age
+for _aid in [x for x in ADDED_FROM_BOOKS if x not in HASFEE and (df['id'] == x).any()]:
     _m = df['id'] == _aid; _ty = df.loc[_m, 'type'].iloc[0]
-    _peer = (df['type'] == _ty) & (pd.to_datetime(df['isd']) >= '2023-01-01') & df['id'].isin(HASFEE)
-    for _c in ('reg', 'geo', 'lytx'): df.loc[_m, _c] = round(float(df.loc[_peer, _c].median()), 4)
+    _yr = pd.to_datetime(df.loc[_m, 'isd'].iloc[0]).year; _yrs = pd.to_datetime(df['isd']).dt.year
+    _peer = (df['type'] == _ty) & ((_yrs - _yr).abs() <= 2) & df['id'].isin(HASFEE)
+    if _peer.sum() < 3: _peer = (df['type'] == _ty) & df['id'].isin(HASFEE)
+    for _c in ('reg', 'geo', 'lytx'): df.loc[_m, _c] = round(float(df.loc[_peer, _c].median()), 4) if _peer.any() else 0.0
     df.loc[_m, 'tel'] = df.loc[_m, 'geo'] + df.loc[_m, 'lytx']
     df.loc[_m, 'flags'] = df.loc[_m, 'flags'].apply(lambda f: [x for x in f if 'pending company-wide fee file' not in x] + [
-        'Added from the depreciation books (missing from the roster export; Julian, Nov 18). Registration, Geotab and Lytx are the median of same-type units bought 2023 or later.'])
+        'New on the Nov 18 roster and not in the fee file: registration, Geotab and Lytx are the median of same-type units within 2 model years.'])
 
 FUEL27 = [5.198, 5.016, 4.834, 4.590, 4.455, 4.320, 4.185, 4.095, 4.005, 3.915, 3.825, 3.735]
 LP27 = [1.624, 1.637, 1.626, 1.610, 1.604, 1.585, 1.591, 1.578, 1.567, 1.540, 1.524, 1.525]
