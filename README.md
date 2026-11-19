@@ -49,3 +49,23 @@ Jan–Sep 2026 actual depreciation (BA depreciation detail) ran $1.145M/month in
 - Both rates are editable by type on the Assumptions tab. Saved browser scenarios reset to the new rates on first load.
 
 Location charges $36,875,154 (fixed $12.20M + variable $8.90M, +$0.92M vs the old rate; 14 TMFLs and 3 forklifts use service-visit hour readings instead of DVIR (TMFLs 244041, 247012, 245042, 244009, 244026, 246008, 245009, 243012, 243026, 247006, 246009, 245010, 245001, 244045; forklifts 383109, 383043, 382048) use hours at their last service ÷ months in service, against $17.02M flat + $3.16M mileage before); actual cost $36,225,313 (747105 is on a $250/month holding rental, like 747104).
+
+## Agreed accounting revision built in (Nov 19)
+
+The dashboard and the Adaptive export now carry the revised 2027 red-box lines agreed with accounting (**$15,163,631**, −3.3% vs the FY2026 outlook):
+
+| Line | 2027 |
+|---|---|
+| Truck repair & maintenance | $7,041,518 |
+| Auto (LD) repair & maintenance | $117,544 |
+| Forklift maintenance | $5,485,894 |
+| Trailer repair & tires | $1,780,625 |
+| Registrations & inspections | $432,055 |
+| Truck rental | $268,815 |
+| Forklift rental | $37,180 |
+
+- One **budget adjustment** line per location (`inputs/budget_adjustments_2027.csv`, actual expense only) brings the unit-by-unit baseline to these totals. Maintenance and registration gaps are spread in proportion to each location's baseline; rentals are set by location from the Jan–Oct 2026 rental invoices × 12/10 (less 011, 950 and the 359 forklift rental). Regenerate with `node src/dump_base.js base_by_loc.json && python3 src/budget_adjust.py` after a build without the file.
+- **Ad valorem tax** is now its own line ($770,860 in 2027 with replacements and new units) instead of sitting in registration. It shows in the dashboard but is left out of the Adaptive export, since accounting budgets it in the property-tax account.
+- Split of the red-box lines: Mfg/DC $4,364,071, flat rate $10,799,560.
+
+Totals: actual cost $38,081,457 ($28,480,390 without fuel); location charges $37,671,638 (the DCs and 355s carry the revision at actual cost).

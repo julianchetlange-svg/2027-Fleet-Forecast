@@ -212,15 +212,16 @@ const locShort = id => id === 'TERM' ? 'Terminated' : id === 'OUT' ? 'Relocated 
 const ASSETS = DATA.assets; const AMAP = Object.fromEntries(ASSETS.map(a => [a.id, a])); const AIDX = Object.fromEntries(ASSETS.map((a, i) => [a.id, i]));
 const LD_TYPES = new Set(['Pickup', 'Car', 'Cargo Van']);   // light-duty vehicles: fuel shown as LD fuel
 // 2027 flat rate (Julian, Nov 19): fixed $/month by type + variable $/mile (trucks, tractors, LD) or $/hour (forklifts, TMFLs). Replaces the $0.425/mile charge.
+const NONUNIT = new Set(['Book only', 'Budget adjustment']);
 const varUse = (a, m) => DATA.varPer[a.type] === 'Hour' ? (a.hrs != null ? a.hrs : (DATA.varAvg[a.type] || 0)) : DATA.varPer[a.type] === 'Mile' ? m / 12 : 0;
 const DEP_CATS = ['Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler'];
 const depCat = t => (DATA.depType || {})[t] || 'Depreciation - Vehicle Heavy';
 const leaseCat = t => (DATA.leaseType || {})[t] || 'Lease - Truck';
 const MAINT_CATS = ['Maintenance - Truck','Maintenance - LD','Maintenance - Forklift','Maintenance - Trailer'];
 const maintCat = t => (DATA.maintType || {})[t] || 'Maintenance - Truck';
-const CATS_CH = ['Truck fuel','LD fuel','Forklift fuel','Maintenance - Truck','Maintenance - LD','Maintenance - Forklift','Maintenance - Trailer','Truck rental','Forklift rental','Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler','Lease - Truck','Lease - Forklift','Lease - LD','Registration & taxes','Geotab','Lytx','Fixed rate','Variable rate'];
-const CATS_OP = ['Truck fuel','LD fuel','Forklift fuel','Maintenance - Truck','Maintenance - LD','Maintenance - Forklift','Maintenance - Trailer','Truck rental','Forklift rental','Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler','Lease - Truck','Lease - Forklift','Lease - LD','Registration & taxes','Geotab','Lytx'];
-const FIXED = ['Maintenance - Truck','Maintenance - LD','Maintenance - Forklift','Maintenance - Trailer', 'Truck rental', 'Forklift rental', 'Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler', 'Lease - Truck','Lease - Forklift','Lease - LD', 'Registration & taxes', 'Geotab','Lytx'];
+const CATS_CH = ['Truck fuel','LD fuel','Forklift fuel','Maintenance - Truck','Maintenance - LD','Maintenance - Forklift','Maintenance - Trailer','Truck rental','Forklift rental','Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler','Lease - Truck','Lease - Forklift','Lease - LD','Registration & inspections','Ad valorem tax','Geotab','Lytx','Fixed rate','Variable rate'];
+const CATS_OP = ['Truck fuel','LD fuel','Forklift fuel','Maintenance - Truck','Maintenance - LD','Maintenance - Forklift','Maintenance - Trailer','Truck rental','Forklift rental','Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler','Lease - Truck','Lease - Forklift','Lease - LD','Registration & inspections','Ad valorem tax','Geotab','Lytx'];
+const FIXED = ['Maintenance - Truck','Maintenance - LD','Maintenance - Forklift','Maintenance - Trailer', 'Truck rental', 'Forklift rental', 'Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler', 'Lease - Truck','Lease - Forklift','Lease - LD', 'Registration & inspections', 'Ad valorem tax', 'Geotab','Lytx'];
 const KIND_CHIP = {Store: 's', Central: 'c', Distribution: 'c', Millwork: 'c', Headquarters: 'c', 'Loaner pool': 'k', 'Fuel account': 'k'};
 const DEF = () => ({ratesVer: DATA.ratesVer, fuelRate: DATA.fuelRate.slice(), lpRate: DATA.lpRate.slice(), dcFuelRate: (DATA.dcFuelRate || DATA.fuelRate).slice(), dcLpRate: (DATA.dcLpRate || DATA.lpRate).slice(), mileRate: DATA.mileRate, maintTrend: 0, maintSeason: 'company', mileGrowth: 0, flat: Object.assign({}, DATA.flat), vr: Object.assign({}, DATA.varRate)});
 const KEY = 'mccoys-fleet-2027.v1';
@@ -279,6 +280,7 @@ function run(assign) {
     const loc = locOf(a); const ch = {}, op = {}; CATS_CH.forEach(c => ch[c] = zero12()); CATS_OP.forEach(c => op[c] = zero12());
     if (REM.has(loc)) return {a, loc, miles: 0, gal: 0, lp: 0, ch, op, parts: [{loc, ch, op}]};
     const actual = isActual(loc);
+    if (a.adj) { for (const c in a.adj) for (let i = 0; i < 12; i++) { const v = a.adj[c] / 12 * (c.startsWith('Maintenance') ? mt * season[i] : 1); op[c][i] = v; if (actual) ch[c][i] = v; } return {a, loc, miles: 0, gal: 0, lp: 0, ch, op, parts: [{loc, ch, op}]}; }   // agreed accounting revision (Nov 19)
     let m = 0, gal = 0;
     if (a.cls === 'Truck') { m = miles[a.id] || 0; const extra = m - a.miles * g; gal = Math.max(0, a.gal * g + extra * (extra > 0 && absorbGpm[a.id] != null ? absorbGpm[a.id] : a.gpm)); }
     const lp = a.cls === 'Forklift' ? a.lp + (lpPool[loc] && fkAt[loc] ? lpPool[loc] / fkAt[loc] : 0) : 0;
@@ -287,10 +289,10 @@ function run(assign) {
       if (a.act && !a.act[i]) continue;   // planned asset not yet in service
       const tf = gal / 12 * (a.galW ? a.galW[i] : 1) * (a.dc ? S.p.dcFuelRate : S.p.fuelRate)[i], ff = lp / 12 * (a.lpW ? a.lpW[i] : 1) * (a.dc ? S.p.dcLpRate : S.p.lpRate)[i];
       const oldOn = !rp || i <= rp.m;   // old unit's cost runs through the delivery month
-      const maint = a.maint * mt / 12 * season[i], dep = (oldOn ? a.dep * a.depElig[i] : 0) + (rp && i >= rp.m ? rp.newDep : 0), lease = oldOn ? a.lease : 0, reg = oldOn ? a.reg : rp.newReg;
-      const fk = LD_TYPES.has(a.type) ? 'LD fuel' : 'Truck fuel'; op[fk][i] = tf; op['Forklift fuel'][i] = ff; op[mk][i] = maint; op['Truck rental'][i] = (a.rentT || 0) / 12; op['Forklift rental'][i] = (a.rentF || 0) / 12; op[dk][i] = dep; op[lk][i] = lease; op['Registration & taxes'][i] = reg; op.Geotab[i] = a.geo; op.Lytx[i] = a.lytx;
+      const maint = a.maint * mt / 12 * season[i], dep = (oldOn ? a.dep * a.depElig[i] : 0) + (rp && i >= rp.m ? rp.newDep : 0), lease = oldOn ? a.lease : 0, reg = oldOn ? a.reg : rp.newReg, adv = oldOn ? (a.adv || 0) : rp.cost / 1500;
+      const fk = LD_TYPES.has(a.type) ? 'LD fuel' : 'Truck fuel'; op[fk][i] = tf; op['Forklift fuel'][i] = ff; op[mk][i] = maint; op['Truck rental'][i] = (a.rentT || 0) / 12; op['Forklift rental'][i] = (a.rentF || 0) / 12; op[dk][i] = dep; op[lk][i] = lease; op['Registration & inspections'][i] = reg - adv; op['Ad valorem tax'][i] = adv; op.Geotab[i] = a.geo; op.Lytx[i] = a.lytx;
       ch[fk][i] = tf; ch['Forklift fuel'][i] = ff;
-      if (actual) { ch[mk][i] = maint; ch['Truck rental'][i] = (a.rentT || 0) / 12; ch['Forklift rental'][i] = (a.rentF || 0) / 12; ch[dk][i] = dep; ch[lk][i] = lease; ch['Registration & taxes'][i] = reg; ch.Geotab[i] = a.geo; ch.Lytx[i] = a.lytx; }
+      if (actual) { ch[mk][i] = maint; ch['Truck rental'][i] = (a.rentT || 0) / 12; ch['Forklift rental'][i] = (a.rentF || 0) / 12; ch[dk][i] = dep; ch[lk][i] = lease; ch['Registration & inspections'][i] = reg - adv; ch['Ad valorem tax'][i] = adv; ch.Geotab[i] = a.geo; ch.Lytx[i] = a.lytx; }
       else { ch['Fixed rate'][i] = flat; ch['Variable rate'][i] = varUse(a, m) * (S.p.vr[a.type] || 0); }
     }
     return {a, loc, miles: m, gal, lp, ch, op, parts: [{loc, ch, op}]};
@@ -577,7 +579,7 @@ function renderAssumptions() {
     arr.forEach((v, i) => { const lab = el('label', {text: MONTHS[i]}); const inp = el('input', {type: 'number', step: '0.001', id: key + i, value: v}); inp.addEventListener('change', () => { const x = parseFloat(inp.value); if (!isNaN(x) && x >= 0) { S.p[key][i] = x; changed('Rate updated'); } }); lab.append(inp); g.append(lab); }); };
   grid('gFuel', p.fuelRate, 'fuelRate'); grid('gLp', p.lpRate, 'lpRate'); grid('gDcFuel', p.dcFuelRate, 'dcFuelRate'); grid('gDcLp', p.dcLpRate, 'dcLpRate');
   const tf = document.getElementById('tFlat'); if (!tf.childElementCount) {
-    const types = [...new Set(ASSETS.filter(a => a.status !== 'Book only').map(a => a.type))].sort();
+    const types = [...new Set(ASSETS.filter(a => !NONUNIT.has(a.status)).map(a => a.type))].sort();
     tf.innerHTML = '<thead><tr><th>Asset type</th><th class="n">Units</th><th class="n">Fixed $/mo</th><th class="n">Variable</th></tr></thead>'; const tb = el('tbody');
     const mk = (ty, i, store, key, label, step) => { const inp = el('input', {type: 'number', step, id: key + i, 'aria-label': label + ' ' + ty, placeholder: 'none'}); inp.style.cssText = 'width:74px;padding:3px 4px;font-size:12.5px;font-variant-numeric:tabular-nums;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);text-align:right'; if (store[ty] != null) inp.value = store[ty]; inp.dataset.t = ty; inp.dataset.k = key; inp.addEventListener('change', () => { const x = parseFloat(inp.value); if (inp.value === '') { delete S.p[key][ty]; changed(label + ' cleared'); } else if (!isNaN(x) && x >= 0) { S.p[key][ty] = x; changed(label + ' updated'); } }); return inp; };
     types.forEach((ty, i) => { const atStores = ASSETS.filter(a => a.type === ty && FLATK.has(LOC[a.loc].kind)).length; const tr = el('tr'); tr.innerHTML = `<td style="white-space:normal">${esc(ty)}</td><td class="n">${atStores}</td><td class="n"></td><td class="n" style="white-space:nowrap"></td>`;
@@ -594,7 +596,7 @@ function renderAssumptions() {
     ASSETS.forEach(a => a.flags.filter(f => f !== PEND).forEach(f => { const tr = el('tr'); tr.innerHTML = `<td><b>${esc(a.id)}</b></td><td>${esc(a.loc)}</td><td>${esc(a.type)}</td><td style="white-space:normal">${esc(f)}</td>`; tb.append(tr); }));
     tg.append(tb);
   }
-  document.getElementById('mScope').textContent = `${f0.format(ASSETS.filter(a => a.status !== 'Book only').length)} assets at ${LOCS.length} locations, plus ${ASSETS.filter(a => a.status === 'Book only').length} book-only depreciation lines.`;
+  document.getElementById('mScope').textContent = `${f0.format(ASSETS.filter(a => !NONUNIT.has(a.status)).length)} assets at ${LOCS.length} locations, plus ${ASSETS.filter(a => a.status === 'Book only').length} book-only depreciation lines and ${ASSETS.filter(a => a.status === 'Budget adjustment').length} budget adjustment lines.`;
 }
 function syncSegs() { document.querySelectorAll('[data-seg]').forEach(g => { const k = g.dataset.seg; g.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(S[k] === b.dataset.val))); }); }
 function rpCalc(id) {   // per-unit 2027 effect of one replacement (independent of the include toggle)
@@ -730,7 +732,8 @@ function adaptiveRows() {
   const add = (code, level, arr, f = 1) => { const k = code + '\u0001' + level; const o = acc.get(k) || (acc.set(k, zero12()), acc.get(k)); for (let i = 0; i < 12; i++) o[i] += arr[i] * f; };
   for (const r of SCEN.rows) for (const pt of (r.parts || [{loc: r.loc, ch: r.ch, op: r.op}])) {
     const fmt = A.fmt[pt.loc] || 'op', src = fmt === 'charge' ? pt.ch : pt.op, cats = fmt === 'charge' ? CATS_CH : CATS_OP, level = A.levels[pt.loc] || A.fleetLevel;
-    for (const c of cats) { const arr = src[c]; if (!arr || !arr.some(v => v)) continue; const codes = A.accounts[key(c)]; if (!codes) { missing.add(c); continue; }
+    for (const c of cats) { const arr = src[c]; if (!arr || !arr.some(v => v)) continue; if (c === 'Ad valorem tax') continue;   // property tax is budgeted outside the fleet accounts (accounting review)
+      const codes = A.accounts[key(c)]; if (!codes) { missing.add(c); continue; }
       add(codes[0], level, arr); } }   // forklift maintenance all to 6602_ForkliftRepair_Maintenance (Julian, Nov 9)
   let proceeds = 0;
   if (S.rpOn) for (const q of REPL) { const x = rpCalc(q.id); if (x.r.leased || x.sm > 11 || !x.r.price) continue; const asg = S.assign[q.id]; if (asg === 'TERM' || asg === 'OUT') continue;
@@ -838,6 +841,6 @@ addEventListener('hashchange', route);
 const setTabsH = () => { const n = document.querySelector('.tabs'); if (n) document.documentElement.style.setProperty('--tabsH', n.offsetHeight + 'px'); };
 setTabsH(); addEventListener('resize', setTabsH);
 let rT; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(renderOverview, 150); });
-document.getElementById('hdrSub').textContent = `Regions 01–08, Distribution, Millwork and Headquarters · ${LOCS.length} locations · ${f0.format(ASSETS.filter(a => a.status !== 'Book only').length)} assets · baseline vs. scenario`;
+document.getElementById('hdrSub').textContent = `Regions 01–08, Distribution, Millwork and Headquarters · ${LOCS.length} locations · ${f0.format(ASSETS.filter(a => !NONUNIT.has(a.status)).length)} assets · baseline vs. scenario`;
 renderAll(); route();
 </script>

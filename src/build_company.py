@@ -218,14 +218,14 @@ for _, r in a.iterrows():
                flat=FLAT.get(r['Asset Template Name']), maint=round(float(maint.get(aid, 0.0)), 2), tire=TIRE.get(aid, 0.0), rentT=round(float(rentT.get(aid, 0.0)), 2), rentF=round(float(rentF.get(aid, 0.0)), 2),
                miles=0.0, gal=0.0, lp=0.0, milesNote='', galNote='', fuelNote='')
     if aid in fee.index:
-        rec['reg'] = round(float(fee.loc[aid, FC[0]]) + float(fee.loc[aid, FC[1]]), 4); rec['tel'] = float(fee.loc[aid, FC[2]]) + float(fee.loc[aid, FC[3]]); rec['geo'] = float(fee.loc[aid, FC[2]]); rec['lytx'] = float(fee.loc[aid, FC[3]])
+        rec['reg'] = round(float(fee.loc[aid, FC[0]]) + float(fee.loc[aid, FC[1]]), 4); rec['adv'] = round(float(fee.loc[aid, FC[1]]), 4); rec['tel'] = float(fee.loc[aid, FC[2]]) + float(fee.loc[aid, FC[3]]); rec['geo'] = float(fee.loc[aid, FC[2]]); rec['lytx'] = float(fee.loc[aid, FC[3]])
         if aid in FEE_NA:   # fee file left this blank (no original value): same formulas, cost from depreciation x term
             pv, how = peer_cost(r['Asset Template Name'], r.isd.year)
             cost = pv if pv else depm * int(r.term); how = how if pv else 'depreciation x term'
-            rec['reg'] = round(cost * (0.0005 if c in ('Truck', 'Trailer') else 0) + cost / 1500, 4)
+            rec['reg'] = round(cost * (0.0005 if c in ('Truck', 'Trailer') else 0) + cost / 1500, 4); rec['adv'] = round(cost / 1500, 4)
             rec['feeNote'] = f'Registration/taxes estimated (no original value in fee file): cost ${cost:,.0f}, {how}'
     else:
-        rec['reg'] = 0.0; rec['tel'] = 0.0; rec['geo'] = 0.0; rec['lytx'] = 0.0
+        rec['reg'] = 0.0; rec['adv'] = 0.0; rec['tel'] = 0.0; rec['geo'] = 0.0; rec['lytx'] = 0.0
     # delivered (original) cost: fee file original value; otherwise same-type peers of the closest age, or depreciation x term (Nov 13)
     _ov = float(fee.loc[aid, 'Asset Original Value']) if aid in fee.index and pd.notna(fee.loc[aid, 'Asset Original Value']) else 0.0
     if _ov > 0: rec['cost'], rec['costSrc'] = round(_ov, 2), 'Original value (fee file)'
@@ -367,7 +367,7 @@ for _aid in [x for x in ADDED_FROM_BOOKS if x not in HASFEE and (df['id'] == x).
 
 FUEL27 = [5.198, 5.016, 4.834, 4.590, 4.455, 4.320, 4.185, 4.095, 4.005, 3.915, 3.825, 3.735]
 LP27 = [1.624, 1.637, 1.626, 1.610, 1.604, 1.585, 1.591, 1.578, 1.567, 1.540, 1.524, 1.525]
-cols = ['id', 'loc', 'type', 'cls', 'make', 'own', 'status', 'isd', 'term', 'dep', 'depElig', 'depSrc', 'lease', 'flat',
+cols = ['id', 'loc', 'type', 'cls', 'make', 'own', 'status', 'isd', 'term', 'dep', 'depElig', 'depSrc', 'lease', 'adv', 'flat',
         'maint', 'tire', 'rentT', 'rentF', 'miles', 'gal', 'gpm', 'lp', 'reg', 'tel', 'geo', 'lytx', 'flags', 'galW', 'lpW', 'dc', 'cost', 'costSrc']
 # ---------- planned new store: 122 Canyon Lake (Region 07), opens mid-June 2027, costs from July ----------
 NEW_LOC = dict(id='122', name='Canyon Lake', district='Region 07', kind='Store')
@@ -466,6 +466,25 @@ for _a in out['assets']:
         _nh += 1
         _a['flags'] = list(_a.get('flags') or []) + [f"No average hours in the Oct 2026 hours file; variable rate uses the {_a['type']} average ({VAR_AVG[_a['type']]:.1f} hrs/month)."]
 print('hours loaded', len(HRS), 'per-hour units without hours', _nh)
+# ---------- ad valorem (property) tax split from registration (accounting review, Nov 17) ----------
+# Fee-file assets carry their monthly taxes; others use 0.8% a year of delivered cost (cost / 1500 a month), capped at their reg amount.
+for _a in out['assets']:
+    _v = _a.get('adv')
+    if _v is None or (isinstance(_v, float) and _v != _v):
+        _a['adv'] = round(min(_a.get('reg') or 0.0, (_a.get('cost') or 0.0) / 1500), 4)
+print('ad valorem $/yr', round(sum(a['adv'] for a in out['assets']) * 12))
+# ---------- agreed 2027 revision for the accounting red-box lines (Nov 17-19) ----------
+# Maintenance, registration & inspections and rentals are set to the revised estimate ($15,163,631) agreed with accounting.
+# inputs/budget_adjustments_2027.csv holds the adjustment by location and line (made by budget_adjust.py from the baseline run).
+if os.path.exists(INPUTS + 'budget_adjustments_2027.csv'):
+    _ba = pd.read_csv(INPUTS + 'budget_adjustments_2027.csv', dtype={'loc': str})
+    for _loc, _g in _ba.groupby('loc'):
+        out['assets'].append(dict(id=f'ADJ-{_loc}', loc=_loc, type='Budget adjustment', cls='Equipment', make='Accounting revision', own='Owned', status='Budget adjustment',
+            isd='2027-01-01', term=60, dep=0.0, depElig=[0] * 12, depSrc='', lease=0.0, adv=0.0, flat=None, maint=0.0, tire=0.0, rentT=0.0, rentF=0.0, miles=0.0, gal=0.0, gpm=0.0, lp=0.0,
+            reg=0.0, tel=0.0, geo=0.0, lytx=0.0, galW=None, lpW=None, dc=0, cost=0.0, costSrc='Budget adjustment (not a fleet unit)', hrs=None,
+            adj={r.line: round(float(r.amount), 2) for _, r in _g.iterrows()},
+            flags=['Budget adjustment to the revised 2027 estimate agreed with accounting (maintenance from the 2026 outlook less replacement savings; registration & inspections at the 2026 outlook; rentals from the Jan-Oct 2026 rental invoices). Actual expense only.']))
+    print('budget adjustment lines', _ba['loc'].nunique(), 'locations; total', round(_ba.amount.sum()))
 out['fuelRate'] = FUEL27[:]; out['dcFuelRate'] = DC_FUEL[:]; out['ratesVer'] = 'flat-2027-fixed-variable-2026-11-19'
 fl = pd.read_excel(INPUTS + 'fuel_by_location.xlsx', sheet_name='Gallons', header=2, dtype={'Location': str})
 fl = fl[fl['Source'].isin(['Fuel card', 'On-site tank'])].copy()
@@ -552,6 +571,7 @@ for _n, _c in zip(_fa.iloc[:, 0], _fa.iloc[:, 1]):
     _acc.setdefault(_key(_n), []).append(str(_c).strip())
 for _new, _old in (('fixed rate', 'flat rate'), ('variable rate', 'mileage charge')):
     if _old in _acc: _acc.setdefault(_new, _acc[_old])
+if 'registration & taxes' in _acc: _acc.setdefault('registration & inspections', _acc['registration & taxes'])
 _lv = pd.read_excel(INPUTS + 'adaptive_template.xlsx', sheet_name='Levels', dtype=str)
 _lvl = {}
 for _s, _c in zip(_lv.iloc[:, 0], _lv.iloc[:, 1]):
