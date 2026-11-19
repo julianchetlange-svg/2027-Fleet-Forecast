@@ -443,9 +443,12 @@ for _sh in ('Store Forklifts', 'Distribution Forklifts', 'TMFLs'):
     _h = pd.read_excel(INPUTS + 'avg_monthly_hours_oct2026.xlsx', sheet_name=_sh, header=3, dtype={'Asset #': str})
     _h = _h[_h['Asset #'].notna() & pd.to_numeric(_h['Avg Hrs / Month'], errors='coerce').notna()]
     for _, r in _h.iterrows(): HRS[str(r['Asset #']).strip()] = round(float(r['Avg Hrs / Month']), 2)
+# 244041: DVIR reading of 7,822 hrs is an entry error; the 10/5/2026 service shows 792 hrs (Julian, Nov 19). In service 11/23/2021.
+HRS['244041'] = round(792 / ((pd.Timestamp('2026-10-05') - pd.Timestamp('2021-11-23')).days / 30.44), 2)
 _nh = 0
 for _a in out['assets']:
     _a['hrs'] = HRS.get(_a['id'])
+    if _a['id'] == '244041': _a['flags'] = list(_a.get('flags') or []) + ['Hours: DVIR reading (7,822) was an entry error; uses 792 hrs at the 10/5/2026 service, 13.6 hrs/month.']
     if _a['type'] in VAR_PER and VAR_PER[_a['type']] == 'Hour' and _a['hrs'] is None and _a.get('status') not in ('Book only',):
         _nh += 1
         _a['flags'] = list(_a.get('flags') or []) + [f"No average hours in the Oct 2026 hours file; variable rate uses the {_a['type']} average ({VAR_AVG[_a['type']]:.1f} hrs/month)."]
