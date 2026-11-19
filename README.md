@@ -38,3 +38,14 @@ Jan–Sep 2026 actual depreciation (BA depreciation detail) ran $1.145M/month in
 **Roster update (Nov 18):** switched to `inputs/roster_current_assets_15.xlsx` (column K = delivery date). New units 758002, 758006, 480009, 381071 and 753047 (fees from same-type medians where not in the fee file). 758006 (Tractor TA, 355) was delivered Nov 18, 2026 to replace 747106 (lost an engine), so 747106 and its 2027 replacement are out. 750046 is being sold. 755026 is on risk hold after an accident and carries depreciation only.
 
 2027 depreciation is now $11.91M (was $11.64M); actual cost $36,248,570, location charges $35,951,164; replacements 76 units, $5,624,000.
+
+## 2027 flat rate: fixed + variable (Nov 19)
+
+`inputs/flat_rate_2027.xlsx` replaces the 2026 flat rates and the $0.425/mile charge for stores, loaner pools and HQ departments. Fuel is still charged separately.
+
+- **Fixed:** $/month by asset type (base + ad valorem, registration, GPS, Lytx; trailers, reach trucks and scissor lifts include a flat maintenance amount).
+- **Variable:** $/mile for trucks, tractors, pickups and cars (each unit's own 2026 miles, including the mileage-change input); $/hour for forklifts and truck-mounted forklifts (type average monthly hours from the rate file until hours by asset are loaded).
+- Loaners that sit at a store are billed to their pool (761–768) or 735, per the file's Billed To. The five department units stay at 530, 590 and 620.
+- Both rates are editable by type on the Assumptions tab. Saved browser scenarios reset to the new rates on first load.
+
+Location charges $37,004,191 (fixed $12.20M + variable $9.03M, against $17.02M flat + $3.16M mileage before); actual cost $36,248,725.

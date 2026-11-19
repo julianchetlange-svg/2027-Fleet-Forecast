@@ -32,8 +32,8 @@
   <div class="kpis" id="kpis"></div>
   <div class="panel">
     <div class="callout">
-      <div class="ch"><span class="eyebrow">Location charges</span><p><b>What each location is charged under the cost rules.</b> Stores, the regional loaner pools (761–768) and the HQ departments (730, 735, 510, 530, 590, 620, 705, 740) carry fuel, the fixed flat rate and $0.425 per truck mile (LD vehicles – pickups, cars and cargo vans – get no mileage charge). Distribution, Millwork, 355CD and 355 Reload carry actual cost: fuel, maintenance, depreciation, lease, registration, taxes, Geotab and Lytx. <b>450 Millwork and Distribution 353, 356, 359 and 489 are on straight P&amp;L</b>, so they show the same actual cost in both views.</p></div>
-      <div class="op"><span class="eyebrow">Actual cost</span><p><b>What McCoy's actually spends.</b> Fuel, maintenance, depreciation, lease, registration, taxes and telematics for every asset, wherever it sits. Flat rates and mileage charges are internal and left out, so only a real change in miles, fuel or fleet size moves this number.</p></div>
+      <div class="ch"><span class="eyebrow">Location charges</span><p><b>What each location is charged under the cost rules.</b> Stores, the regional loaner pools (761–768) and the HQ departments (730, 735, 510, 530, 590, 620, 705, 740) carry fuel plus the 2027 flat rate: a fixed monthly rate by asset type and a variable rate per mile (trucks, tractors, pickups and cars) or per hour (forklifts and truck-mounted forklifts). Loaners are billed to their pool (761–768) or 735. Distribution, Millwork, 355CD and 355 Reload carry actual cost: fuel, maintenance, depreciation, lease, registration, taxes, Geotab and Lytx. <b>450 Millwork and Distribution 353, 356, 359 and 489 are on straight P&amp;L</b>, so they show the same actual cost in both views.</p></div>
+      <div class="op"><span class="eyebrow">Actual cost</span><p><b>What McCoy's actually spends.</b> Fuel, maintenance, depreciation, lease, registration, taxes and telematics for every asset, wherever it sits. Fixed and variable rates are internal charges and left out, so only a real change in miles, fuel or fleet size moves this number.</p></div>
     </div>
   </div>
   <div class="grid2">
@@ -71,11 +71,11 @@
     <div class="panel">
       <div class="phead"><div><h2>How a move works</h2></div></div>
       <ul class="rules">
-        <li><b>The destination's rules apply.</b> At a store an asset is charged its flat rate (and $0.425 per mile for trucks other than pickups, cars and cargo vans). At an actual-cost location it carries its fuel, maintenance, depreciation, lease and fees.</li>
+        <li><b>The destination's rules apply.</b> At a store an asset is charged its 2027 fixed rate plus its variable rate (per mile or per hour). At an actual-cost location it carries its fuel, maintenance, depreciation, lease and fees.</li>
         <li><b>Work stays with the location.</b> Demand is what the history shows, so a moved truck brings no new work. The miles it drove stay at its origin and pass to the trucks that remain there, at the fuel rate of the truck that left. At the destination, the location's existing miles are shared across all its trucks.</li>
         <li><b>Forklifts carry their propane.</b> TMFLs, trailers and other equipment have no separate fuel.</li>
         <li><b>Terminate or relocate out.</b> The asset's costs leave the forecast from its effective month. Terminating saves the company its maintenance, depreciation, lease and fees; relocating out moves them outside McCoy's 2027 plan. Its work stays with the remaining units at the location.</li>
-        <li><b>No store rate.</b> Golf carts, scissor lifts, cars, van trailers and other equipment have no store flat rate. A move of one of these to a store is flagged.</li>
+        <li><b>No store rate.</b> Golf carts, light towers, sweepers and other equipment have no 2027 store rate. A move of one of these to a store is flagged.</li>
         <li><b>Effective month.</b> Every change starts in the month you pick (default January).</li>
       </ul>
     </div>
@@ -145,10 +145,9 @@
       <button class="btn small" id="btnResetA" type="button">Restore default inputs</button></div>
     <div class="agrid">
       <div>
-        <div class="field"><label for="iGrowth">Truck mileage change vs. last 12 months (%)</label><input id="iGrowth" type="number" step="0.5"><small>Applies to every truck's baseline miles, fuel gallons and mileage charge.</small></div>
+        <div class="field"><label for="iGrowth">Truck mileage change vs. last 12 months (%)</label><input id="iGrowth" type="number" step="0.5"><small>Applies to every truck's baseline miles, fuel gallons and per-mile variable charge.</small></div>
         <div class="field"><label for="iMaint">Maintenance trend vs. last 12 months (%)</label><input id="iMaint" type="number" step="0.5"></div>
         <div class="field"><label for="iSeason">Maintenance timing by month</label><select id="iSeason" style="padding:6px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);max-width:280px"><option value="company">Company-wide history (Jan 2025–Sep 2026)</option><option value="flat">Flat (annual ÷ 12)</option></select><small>Spreads each asset's annual maintenance by the historical monthly pattern. Annual totals do not change.</small></div>
-        <div class="field"><label for="iMile">Store mileage charge ($ per mile)</label><input id="iMile" type="number" step="0.005"></div>
       </div>
       <div>
         <h3 style="margin-bottom:8px">2027 blended fuel rate (all locations except Distribution), $/gal</h3>
@@ -161,8 +160,8 @@
         <div class="rate-grid" id="gDcLp"></div>
       </div>
       <div>
-        <h3 style="margin-bottom:8px">Store flat rates, $/month</h3>
-        <div class="tbl-wrap" style="max-height:520px"><table id="tFlat"></table></div>
+        <h3 style="margin-bottom:8px">2027 store rates: fixed $/month and variable $/mile or $/hour</h3><p class="note" style="margin:0 0 8px">Variable charges use each truck's own 2026 miles. Forklifts and truck-mounted forklifts use the type's average monthly hours until hours by asset are loaded.</p>
+        <style>#tFlat input::-webkit-outer-spin-button,#tFlat input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}#tFlat input{-moz-appearance:textfield;appearance:textfield}#tFlat td,#tFlat th{padding-left:6px;padding-right:6px}</style><div class="tbl-wrap" style="max-height:520px"><table id="tFlat"></table></div>
       </div>
     </div>
   </div>
@@ -173,9 +172,9 @@
       <li><b>New 15.5K forklift at 359 Burnet Reload.</b> Added from January 2027 (asset 359-NEW-01): owned, $113,000 delivered cost over 84 months ($1,345/month), maintenance at the median of 15.5K forklifts bought 2024 or later, registration &amp; taxes on the new cost, and propane already in the 359 forecast.</li>
       <li><b>Planned transfer.</b> 13K forklift 386045 moves from 359 Burnet Reload to 353 Dayton in February 2027, after the new 15.5K forklift is delivered. Its costs follow it from February; propane stays with each site's forecast. This is part of the baseline.</li>
       <li><b>New store 122 Canyon Lake (Region 07).</b> Opens mid-June 2027; its 9 planned assets (2 24' TA Flatbeds, 2 TMFLs, 3 6K forklifts, 1 8K forklift, 1 pickup) are charged from July. Miles, fuel and propane use the Region 07 median for each type; depreciation, maintenance and registration, taxes, Geotab and Lytx use the median of same-type units bought 2024 or later.</li>
-      <li><b>Cost rules.</b> Stores (Regions 01–08), regional loaner pools (761–768) and HQ departments (730, 735, 510, 530, 590, 620, 705, 740): fuel + flat rate, plus $0.425 per mile for trucks (not LD vehicles: pickups, cars and cargo vans). Actual cost (Distribution 353/356/359/489, Millwork 450, 355CD and 355 Reload): fuel + maintenance + depreciation + lease + registration, taxes, Geotab and Lytx.</li>
+      <li><b>Cost rules.</b> Stores (Regions 01–08), regional loaner pools (761–768) and HQ departments (730, 735, 510, 530, 590, 620, 705, 740): fuel + 2027 fixed rate by type + variable rate ($/mile for trucks, tractors, pickups and cars; $/hour for forklifts and truck-mounted forklifts). Loaners that sit at a store are billed to their pool (761–768) or 735. Actual cost (Distribution 353/356/359/489, Millwork 450, 355CD and 355 Reload): fuel + maintenance + depreciation + lease + registration, taxes, Geotab and Lytx.</li>
       <li><b>Rentals.</b> Truck and forklift rental invoices (work order categories "Truck - Rental" and "Forklift - Rental", Oct 2025–Sep 2026) are taken out of maintenance and shown as Truck rental and Forklift rental, spread evenly by month and kept with the unit they were charged to. Like maintenance, they count in location charges only at actual-cost locations. The recurring forklift rental at 011 South Austin was turned in, so it is not carried into 2027.</li>
-      <li><b>Adaptive export.</b> The Adaptive export button (header and every tab) downloads the forecast as shown, scenario changes and replacements included, in the Adaptive import format: Account Code, Level Code, Split Label, 01/2027–12/2027. Stores 001–122, 387 Window Delivery, loaner pools 761–768 and 730/735/900 export their location charges (fuel, flat rate and mileage charge to 6645_AllocatedFleet for stores and pools); their sale proceeds post to 735 Fleet. Distribution 353/356/359, Millwork 450, 489 EWP, 355 Centralized Delivery and 355 Pharr - Reload export actual cost, and their sale proceeds post to their own level. All forklift maintenance goes to 6602_ForkliftRepair_Maintenance. Department fuel accounts 510 Information Services, 530 People Development, 620 Marketing and 740 Risk Management export in the charges format to their own levels. Sale proceeds export as a deduction (negative).</li>
+      <li><b>Adaptive export.</b> The Adaptive export button (header and every tab) downloads the forecast as shown, scenario changes and replacements included, in the Adaptive import format: Account Code, Level Code, Split Label, 01/2027–12/2027. Stores 001–122, 387 Window Delivery, loaner pools 761–768 and 730/735/900 export their location charges (fuel; fixed and variable rate to 6645_AllocatedFleet for stores and pools); their sale proceeds post to 735 Fleet. Distribution 353/356/359, Millwork 450, 489 EWP, 355 Centralized Delivery and 355 Pharr - Reload export actual cost, and their sale proceeds post to their own level. All forklift maintenance goes to 6602_ForkliftRepair_Maintenance. Department fuel accounts 510 Information Services, 530 People Development, 620 Marketing and 740 Risk Management export in the charges format to their own levels. Sale proceeds export as a deduction (negative).</li>
       <li><b>Lease lines.</b> Lease payments are split by asset type following the Lease Type mapping: Truck (trucks, tractors and trailers), Forklift (forklifts, TMFLs and equipment) and LD (pickups, cars, cargo vans, millwork and open-air trailers).</li>
       <li><b>Maintenance lines.</b> Maintenance is split into four lines by asset type, following the Maintenance Type mapping: Truck (flatbeds, slide flatbeds, conveyors, van bodies, tractors), LD (pickups, cars, cargo vans, millwork and open-air trailers), Forklift (yard and truck-mounted forklifts, order pickers, reach trucks, scissor lifts, golf carts, light towers, sweepers, generators) and Trailer (flatbed, pup and van trailers, rolling tarps).</li>
       <li><b>Depreciation lines.</b> Depreciation is split into four lines by asset type, following the Depreciation Type mapping: Vehicle Heavy (24' TA Flatbeds, slide flatbeds, conveyors, van bodies), Vehicle Light (pickups, cars, cargo vans, millwork and open-air trailers), Forklifts (yard and truck-mounted forklifts, order pickers, reach trucks, scissor lifts, golf carts, light towers, sweepers, generators) and 18 Wheeler (tractors, flatbed, pup and van trailers, rolling tarps).</li>
@@ -205,27 +204,28 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 const LOCS = DATA.locations; const LOC = Object.fromEntries(LOCS.map(l => [l.id, l]));
 const DISTS = DATA.districts.filter(d => LOCS.some(l => l.district === d));
 const LOCS_BY_D = Object.fromEntries(DISTS.map(d => [d, LOCS.filter(l => l.district === d)]));
-const FLATK = new Set(['Store', 'Loaner pool', 'Headquarters']);   // HQ departments are charged like stores (Julian, Nov 10)   // charged fuel + flat rate + $/mile
+const FLATK = new Set(['Store', 'Loaner pool', 'Headquarters']);   // HQ departments are charged like stores (Julian, Nov 10)   // charged fuel + fixed rate + variable rate
 const isActual = id => !!LOC[id] && !FLATK.has(LOC[id].kind);
 const REM = new Set(['TERM', 'OUT']);
 const REM_LABEL = {TERM: 'Terminated (sold / lease returned)', OUT: 'Relocated out of McCoy\'s plan'};
 const locShort = id => id === 'TERM' ? 'Terminated' : id === 'OUT' ? 'Relocated out' : id;
 const ASSETS = DATA.assets; const AMAP = Object.fromEntries(ASSETS.map(a => [a.id, a])); const AIDX = Object.fromEntries(ASSETS.map((a, i) => [a.id, i]));
 const LD_TYPES = new Set(['Pickup', 'Car', 'Cargo Van']);   // light-duty vehicles: fuel shown as LD fuel
-const NO_MILE = new Set(['Pickup', 'Car', 'Cargo Van']);   // LD vehicles get no mileage charge (Julian, Nov 10)
+// 2027 flat rate (Julian, Nov 19): fixed $/month by type + variable $/mile (trucks, tractors, LD) or $/hour (forklifts, TMFLs). Replaces the $0.425/mile charge.
+const varUse = (a, m) => DATA.varPer[a.type] === 'Hour' ? (a.hrs != null ? a.hrs : (DATA.varAvg[a.type] || 0)) : DATA.varPer[a.type] === 'Mile' ? m / 12 : 0;
 const DEP_CATS = ['Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler'];
 const depCat = t => (DATA.depType || {})[t] || 'Depreciation - Vehicle Heavy';
 const leaseCat = t => (DATA.leaseType || {})[t] || 'Lease - Truck';
 const MAINT_CATS = ['Maintenance - Truck','Maintenance - LD','Maintenance - Forklift','Maintenance - Trailer'];
 const maintCat = t => (DATA.maintType || {})[t] || 'Maintenance - Truck';
-const CATS_CH = ['Truck fuel','LD fuel','Forklift fuel','Maintenance - Truck','Maintenance - LD','Maintenance - Forklift','Maintenance - Trailer','Truck rental','Forklift rental','Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler','Lease - Truck','Lease - Forklift','Lease - LD','Registration & taxes','Geotab','Lytx','Flat rate','Mileage charge'];
+const CATS_CH = ['Truck fuel','LD fuel','Forklift fuel','Maintenance - Truck','Maintenance - LD','Maintenance - Forklift','Maintenance - Trailer','Truck rental','Forklift rental','Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler','Lease - Truck','Lease - Forklift','Lease - LD','Registration & taxes','Geotab','Lytx','Fixed rate','Variable rate'];
 const CATS_OP = ['Truck fuel','LD fuel','Forklift fuel','Maintenance - Truck','Maintenance - LD','Maintenance - Forklift','Maintenance - Trailer','Truck rental','Forklift rental','Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler','Lease - Truck','Lease - Forklift','Lease - LD','Registration & taxes','Geotab','Lytx'];
 const FIXED = ['Maintenance - Truck','Maintenance - LD','Maintenance - Forklift','Maintenance - Trailer', 'Truck rental', 'Forklift rental', 'Depreciation - Vehicle Heavy','Depreciation - Vehicle Light','Depreciation - Forklifts','Depreciation - 18 Wheeler', 'Lease - Truck','Lease - Forklift','Lease - LD', 'Registration & taxes', 'Geotab','Lytx'];
 const KIND_CHIP = {Store: 's', Central: 'c', Distribution: 'c', Millwork: 'c', Headquarters: 'c', 'Loaner pool': 'k', 'Fuel account': 'k'};
-const DEF = () => ({ratesVer: DATA.ratesVer, fuelRate: DATA.fuelRate.slice(), lpRate: DATA.lpRate.slice(), dcFuelRate: (DATA.dcFuelRate || DATA.fuelRate).slice(), dcLpRate: (DATA.dcLpRate || DATA.lpRate).slice(), mileRate: DATA.mileRate, maintTrend: 0, maintSeason: 'company', mileGrowth: 0, flat: Object.assign({}, DATA.flat)});
+const DEF = () => ({ratesVer: DATA.ratesVer, fuelRate: DATA.fuelRate.slice(), lpRate: DATA.lpRate.slice(), dcFuelRate: (DATA.dcFuelRate || DATA.fuelRate).slice(), dcLpRate: (DATA.dcLpRate || DATA.lpRate).slice(), mileRate: DATA.mileRate, maintTrend: 0, maintSeason: 'company', mileGrowth: 0, flat: Object.assign({}, DATA.flat), vr: Object.assign({}, DATA.varRate)});
 const KEY = 'mccoys-fleet-2027.v1';
 let S = {assign: {}, eff: {}, p: DEF(), view: 'charge', dcase: 'scen', exp: {}, expO: {}, rp: {}, rpOn: true};
-function loadState(o) { S = Object.assign(S, o); S.eff = o.eff || {}; S.exp = o.exp || {}; S.expO = o.expO || {}; S.rp = o.rp || {}; S.rpOn = o.rpOn !== false; S.p = Object.assign(DEF(), o.p || {}); S.p.flat = Object.assign({}, DEF().flat, (o.p || {}).flat || {}); if ((o.p || {}).ratesVer !== DATA.ratesVer) { S.p.fuelRate = DATA.fuelRate.slice(); S.p.dcFuelRate = (DATA.dcFuelRate || DATA.fuelRate).slice(); S.p.ratesVer = DATA.ratesVer; } if (!DATA.maintSeason[S.p.maintSeason] && S.p.maintSeason !== 'flat') S.p.maintSeason = 'company'; }
+function loadState(o) { S = Object.assign(S, o); S.eff = o.eff || {}; S.exp = o.exp || {}; S.expO = o.expO || {}; S.rp = o.rp || {}; S.rpOn = o.rpOn !== false; S.p = Object.assign(DEF(), o.p || {}); S.p.flat = Object.assign({}, DEF().flat, (o.p || {}).flat || {}); S.p.vr = Object.assign({}, DEF().vr, (o.p || {}).vr || {}); if ((o.p || {}).ratesVer !== DATA.ratesVer) { S.p.fuelRate = DATA.fuelRate.slice(); S.p.dcFuelRate = (DATA.dcFuelRate || DATA.fuelRate).slice(); S.p.flat = Object.assign({}, DATA.flat); S.p.vr = Object.assign({}, DATA.varRate); S.p.ratesVer = DATA.ratesVer; } if (!DATA.maintSeason[S.p.maintSeason] && S.p.maintSeason !== 'flat') S.p.maintSeason = 'company'; }
 try { const raw = localStorage.getItem(KEY); if (raw) loadState(JSON.parse(raw)); } catch (e) {}
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 
@@ -291,7 +291,7 @@ function run(assign) {
       const fk = LD_TYPES.has(a.type) ? 'LD fuel' : 'Truck fuel'; op[fk][i] = tf; op['Forklift fuel'][i] = ff; op[mk][i] = maint; op['Truck rental'][i] = (a.rentT || 0) / 12; op['Forklift rental'][i] = (a.rentF || 0) / 12; op[dk][i] = dep; op[lk][i] = lease; op['Registration & taxes'][i] = reg; op.Geotab[i] = a.geo; op.Lytx[i] = a.lytx;
       ch[fk][i] = tf; ch['Forklift fuel'][i] = ff;
       if (actual) { ch[mk][i] = maint; ch['Truck rental'][i] = (a.rentT || 0) / 12; ch['Forklift rental'][i] = (a.rentF || 0) / 12; ch[dk][i] = dep; ch[lk][i] = lease; ch['Registration & taxes'][i] = reg; ch.Geotab[i] = a.geo; ch.Lytx[i] = a.lytx; }
-      else { ch['Flat rate'][i] = flat; if (a.cls === 'Truck' && !NO_MILE.has(a.type)) ch['Mileage charge'][i] = m / 12 * S.p.mileRate; }
+      else { ch['Fixed rate'][i] = flat; ch['Variable rate'][i] = varUse(a, m) * (S.p.vr[a.type] || 0); }
     }
     return {a, loc, miles: m, gal, lp, ch, op, parts: [{loc, ch, op}]};
   });
@@ -572,16 +572,20 @@ function renderDetail() {
 function renderAssumptions() {
   const p = S.p;
   const setv = (id, v) => { const e = document.getElementById(id); if (document.activeElement !== e) e.value = v; };
-  setv('iGrowth', p.mileGrowth); setv('iSeason', p.maintSeason); setv('iMaint', p.maintTrend); setv('iMile', p.mileRate);
+  setv('iGrowth', p.mileGrowth); setv('iSeason', p.maintSeason); setv('iMaint', p.maintTrend);
   const grid = (id, arr, key) => { const g = document.getElementById(id); if (g.childElementCount) { arr.forEach((v, i) => { const e = g.querySelectorAll('input')[i]; if (document.activeElement !== e) e.value = v; }); return; }
     arr.forEach((v, i) => { const lab = el('label', {text: MONTHS[i]}); const inp = el('input', {type: 'number', step: '0.001', id: key + i, value: v}); inp.addEventListener('change', () => { const x = parseFloat(inp.value); if (!isNaN(x) && x >= 0) { S.p[key][i] = x; changed('Rate updated'); } }); lab.append(inp); g.append(lab); }); };
   grid('gFuel', p.fuelRate, 'fuelRate'); grid('gLp', p.lpRate, 'lpRate'); grid('gDcFuel', p.dcFuelRate, 'dcFuelRate'); grid('gDcLp', p.dcLpRate, 'dcLpRate');
   const tf = document.getElementById('tFlat'); if (!tf.childElementCount) {
     const types = [...new Set(ASSETS.filter(a => a.status !== 'Book only').map(a => a.type))].sort();
-    tf.innerHTML = '<thead><tr><th>Asset type</th><th class="n">At stores &amp; pools</th><th class="n">$/month</th></tr></thead>'; const tb = el('tbody');
-    types.forEach((ty, i) => { const atStores = ASSETS.filter(a => a.type === ty && FLATK.has(LOC[a.loc].kind)).length; const tr = el('tr'); tr.innerHTML = `<td>${esc(ty)}</td><td class="n">${atStores}</td><td class="n"></td>`; const inp = el('input', {type: 'number', step: '0.01', id: 'flat' + i, 'aria-label': 'Flat rate ' + ty, placeholder: 'none'}); inp.style.cssText = 'width:96px;padding:4px 6px;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);text-align:right'; if (p.flat[ty] != null) inp.value = p.flat[ty]; inp.dataset.t = ty; inp.addEventListener('change', () => { const x = parseFloat(inp.value); if (inp.value === '') { delete S.p.flat[ty]; changed('Flat rate cleared'); } else if (!isNaN(x) && x >= 0) { S.p.flat[ty] = x; changed('Flat rate updated'); } }); tr.lastChild.append(inp); tb.append(tr); });
+    tf.innerHTML = '<thead><tr><th>Asset type</th><th class="n">Units</th><th class="n">Fixed $/mo</th><th class="n">Variable</th></tr></thead>'; const tb = el('tbody');
+    const mk = (ty, i, store, key, label, step) => { const inp = el('input', {type: 'number', step, id: key + i, 'aria-label': label + ' ' + ty, placeholder: 'none'}); inp.style.cssText = 'width:74px;padding:3px 4px;font-size:12.5px;font-variant-numeric:tabular-nums;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);text-align:right'; if (store[ty] != null) inp.value = store[ty]; inp.dataset.t = ty; inp.dataset.k = key; inp.addEventListener('change', () => { const x = parseFloat(inp.value); if (inp.value === '') { delete S.p[key][ty]; changed(label + ' cleared'); } else if (!isNaN(x) && x >= 0) { S.p[key][ty] = x; changed(label + ' updated'); } }); return inp; };
+    types.forEach((ty, i) => { const atStores = ASSETS.filter(a => a.type === ty && FLATK.has(LOC[a.loc].kind)).length; const tr = el('tr'); tr.innerHTML = `<td style="white-space:normal">${esc(ty)}</td><td class="n">${atStores}</td><td class="n"></td><td class="n" style="white-space:nowrap"></td>`;
+      tr.children[2].append(mk(ty, i, p.flat, 'flat', 'Fixed rate', '0.01'));
+      if (DATA.varPer[ty]) { tr.children[3].append(mk(ty, i, p.vr, 'vr', 'Variable rate', '0.0001')); tr.children[3].append(document.createTextNode(DATA.varPer[ty] === 'Hour' ? ' /hr' : ' /mi')); } else tr.children[3].textContent = '–';
+      tb.append(tr); });
     tf.append(tb);
-  } else tf.querySelectorAll('input').forEach(i => { if (document.activeElement !== i) i.value = p.flat[i.dataset.t] != null ? p.flat[i.dataset.t] : ''; });
+  } else tf.querySelectorAll('input').forEach(i => { const st = p[i.dataset.k] || {}; if (document.activeElement !== i) i.value = st[i.dataset.t] != null ? st[i.dataset.t] : ''; });
   const tg = document.getElementById('tFlags'); if (!tg.childElementCount) {
     const PEND = 'Registration, taxes, Geotab and Lytx pending company-wide fee file';
     const pend = ASSETS.filter(a => a.flags.includes(PEND)).length;
@@ -683,7 +687,7 @@ document.getElementById('btnCopyScen').addEventListener('click', () => {
   const box = document.getElementById('scenText'); box.value = txt; box.hidden = false; box.select();
 });
 document.getElementById('btnResetA').addEventListener('click', () => { S.p = DEF(); ['gFuel', 'gLp', 'gDcFuel', 'gDcLp', 'tFlat'].forEach(id => document.getElementById(id).innerHTML = ''); changed('Default inputs restored', true); });
-[['iGrowth', 'mileGrowth'], ['iMaint', 'maintTrend'], ['iMile', 'mileRate']].forEach(([id, k]) => document.getElementById(id).addEventListener('change', e => { const x = parseFloat(e.target.value); if (!isNaN(x)) { S.p[k] = x; changed('Input updated', true); } }));
+[['iGrowth', 'mileGrowth'], ['iMaint', 'maintTrend']].forEach(([id, k]) => document.getElementById(id).addEventListener('change', e => { const x = parseFloat(e.target.value); if (!isNaN(x)) { S.p[k] = x; changed('Input updated', true); } }));
 document.getElementById('iSeason').addEventListener('change', e => { S.p.maintSeason = e.target.value; changed('Maintenance timing updated', true); });
 document.getElementById('rpOn').addEventListener('change', e => { S.rpOn = e.target.checked; changed(S.rpOn ? 'Replacements included in the forecast' : 'Replacements excluded from the forecast'); });
 document.getElementById('rpReset').addEventListener('click', () => { S.rp = {}; changed('Replacement edits cleared'); });
@@ -786,12 +790,12 @@ function exportExcel() {
     [['Baseline', b], ['Scenario', s], ['Change', dd]].forEach(([nm, arr]) => mo.push([view, d, locLabel(l.id), nm, ...arr.map(r2), r2(sum12(arr))])); }
   const mc = []; for (let c = 4; c <= 16; c++) mc.push(c);
   XLSX.utils.book_append_sheet(wb, mkSheet(mo, mc, [16, 14, 28, 10, ...MONTHS.map(() => 11), 13]), 'Monthly');
-  const ip = [['Key', 'Input', 'Value'], ['mileGrowth', 'Truck mileage change vs last 12 months (%)', S.p.mileGrowth], ['maintTrend', 'Maintenance trend (%)', S.p.maintTrend], ['maintSeason', 'Maintenance timing (company / flat)', S.p.maintSeason], ['mileRate', 'Store mileage charge ($/mile)', S.p.mileRate]];
+  const ip = [['Key', 'Input', 'Value'], ['mileGrowth', 'Truck mileage change vs last 12 months (%)', S.p.mileGrowth], ['maintTrend', 'Maintenance trend (%)', S.p.maintTrend], ['maintSeason', 'Maintenance timing (company / flat)', S.p.maintSeason]];
   MONTHS.forEach((m, i) => ip.push(['fuelRate.' + i, 'Blended fuel rate ' + m + ' 2027 ($/gal)', S.p.fuelRate[i]]));
   MONTHS.forEach((m, i) => ip.push(['lpRate.' + i, 'Propane price ' + m + ' 2027 ($/gal)', S.p.lpRate[i]]));
   MONTHS.forEach((m, i) => ip.push(['dcFuelRate.' + i, 'Distribution diesel price ' + m + ' 2027 ($/gal)', S.p.dcFuelRate[i]]));
   MONTHS.forEach((m, i) => ip.push(['dcLpRate.' + i, 'Distribution propane price ' + m + ' 2027 ($/gal)', S.p.dcLpRate[i]]));
-  Object.keys(S.p.flat).sort().forEach(ty => ip.push(['flat.' + ty, 'Flat rate ' + ty + ' ($/month)', S.p.flat[ty]]));
+  Object.keys(S.p.flat).sort().forEach(ty => ip.push(['flat.' + ty, 'Fixed rate ' + ty + ' ($/month)', S.p.flat[ty]])); Object.keys(S.p.vr).sort().forEach(ty => ip.push(['vr.' + ty, 'Variable rate ' + ty + ' ($/' + (DATA.varPer[ty] || '').toLowerCase() + ')', S.p.vr[ty]]));
   XLSX.utils.book_append_sheet(wb, mkSheet(ip, [], [26, 44, 12]), 'Inputs');
   const st = new Date(); const fn = `McCoys_Fleet_Scenario_${st.getFullYear()}-${String(st.getMonth() + 1).padStart(2, '0')}-${String(st.getDate()).padStart(2, '0')}.xlsx`;
   try { XLSX.writeFile(wb, fn); S.lastExport = Date.now(); save(); renderXbars(); toast('Excel file downloaded'); } catch (e) { toast('Download was blocked; open the GitHub page to export'); }
@@ -812,7 +816,7 @@ function importExcel(file) {
       }
       const wi = wb.Sheets['Inputs'];
       if (wi) { const p = DEF(); XLSX.utils.sheet_to_json(wi, {defval: ''}).forEach(r => { const k = String(r['Key']); if (k === 'maintSeason') { const sv2 = String(r['Value']).trim(); if (['company', 'flat'].includes(sv2)) p.maintSeason = sv2; return; } const v = parseFloat(r['Value']); if (isNaN(v)) return;
-        const mk = k.split('.')[0]; if (['fuelRate', 'lpRate', 'dcFuelRate', 'dcLpRate'].includes(mk)) p[mk][+k.split('.')[1]] = v; else if (k.startsWith('flat.')) p.flat[k.slice(5)] = v; else if (k in p) p[k] = v; });
+        const mk = k.split('.')[0]; if (['fuelRate', 'lpRate', 'dcFuelRate', 'dcLpRate'].includes(mk)) p[mk][+k.split('.')[1]] = v; else if (k.startsWith('flat.')) p.flat[k.slice(5)] = v; else if (k.startsWith('vr.')) (p.vr = p.vr || {})[k.slice(3)] = v; else if (k in p) p[k] = v; });
         S.p = p; ['gFuel', 'gLp', 'gDcFuel', 'gDcLp', 'tFlat'].forEach(id => document.getElementById(id).innerHTML = ''); }
       const wr = wb.Sheets['Replacements']; if (wr) { const rp = {}; let on = true; XLSX.utils.sheet_to_json(wr, {defval: ''}).forEach(r => { const id = String(r['Unit'] || '').trim(); if (id === 'Included in forecast') { on = String(r['Type']).trim().toLowerCase() !== 'no'; return; } if (!RMAP[id]) return;
         const o = {}; const mi = MONTHS.indexOf(String(r['Delivery month'] || '').trim().slice(0, 3)); if (mi >= 0 && mi !== RMAP[id].m) o.m = mi; const c = parseFloat(r['Delivered cost']); if (!isNaN(c) && c !== RMAP[id].cost) o.cost = c; if (Object.keys(o).length) rp[id] = o; }); S.rp = rp; S.rpOn = on; }

@@ -12,6 +12,17 @@ os.makedirs(INPUTS, exist_ok=True)
 a = pd.read_excel(INPUTS + 'roster_current_assets_15.xlsx', header=1, dtype=str).drop(columns=['Asset Location', 'Asset Original Value'], errors='ignore')
 _old = set(pd.read_excel(A + '76d1ece1-Current_Assets_7.xlsx', header=1, dtype=str)['Asset Name'])
 a = a[a['Store Number'] != '950'].copy()          # Rio Truss excluded
+# Loaners that sit at a store are billed to their pool (761-768) or 735, per the 2027 rate file (Julian, Nov 19)
+_rf = pd.read_excel(INPUTS + 'flat_rate_2027.xlsx', sheet_name='Rates by Asset', dtype={'Asset': str, 'Billed To': str})
+_bill = {r.Asset: r['Billed To'].zfill(3) for _, r in _rf.iterrows() if str(r.Note).startswith('Sits at a store; billed to')}
+for _aid, _to in _bill.items():
+    _m = a['Asset Name'] == _aid
+    if not _m.any(): continue
+    _ref = a[a['Store Number'] == _to]
+    a.loc[_m, 'Store Number'] = _to
+    if len(_ref): a.loc[_m, 'Store Name'] = _ref['Store Name'].iloc[0]; a.loc[_m, 'Store District'] = _ref['Store District'].fillna('').iloc[0]
+    else: a.loc[_m, 'Store Name'] = f'Region {int(_to[2])}'; a.loc[_m, 'Store District'] = f'Region 0{_to[2]}'
+BILLED_TO_POOL = set(_bill)
 a['Store District'] = a['Store District'].fillna('')
 # 747106 (Tractor TA, 355): its replacement 758006 was delivered Nov 18, 2026 (truck lost an engine; Julian, Nov 18), so it is out of the 2027 fleet.
 # 750046 is being sold (already off this roster). 755026 is on risk hold after an accident: depreciation only (book-only lines).
@@ -99,15 +110,18 @@ for k, v in lease.items():
 lease['747104'] = 250.0; lease_note['747104'] = 'Holding rental $250/mo'
 lease['747106'] = 150.0; lease_note['747106'] = 'Holding rental $150/mo'
 
-# ---------- flat rates (stores) ----------
-FLAT = {'Car': 608.34, 'Van Trailer': 560.88, 'Scissor Lift': 280.03,   # Julian, Nov 10
-        '10K Yard Forklift': 1305.79, "12' Slide Flatbed": 1192.80, "16' Conveyor": 1841.10, "16' Van Body": 1274.35,
-        "20' Slide Flatbed": 1216.97, "24' Conveyor": 2264.57, "24' TA Flatbed": 1981.47, "24' TA Slide Flatbed": 2489.40,
-        "24' Van Body": 1691.42, '3K Yard Forklift': 845.43, '4K Yard Forklift': 935.65, '4-Way Truck Mounted Forklift': 1343.17,
-        '6K Yard Forklift': 1007.80, '8K Boxcar Forklift': 1343.23, '8K Yard Forklift': 1262.59, 'Electric Pallet Jack': 201.04,
-        'Flatbed Trailer': 914.99, 'Millwork Trailer': 415.81, 'Open Air Trailer': 183.99, 'Order Picker': 1025.11,
-        'Pickup': 995.46, 'Pup Trailer': 153.75, 'Reach Truck': 1400.63, 'Tractor SA': 1715.35, 'Tractor TA': 1741.26,
-        'Truck Mounted Forklift': 1152.43}
+# ---------- 2027 flat rate: fixed $/month + variable $/mile or $/hour by asset type (Julian, Nov 19) ----------
+# Replaces the 2026 flat rates and the $0.425/mile charge. Fuel is still charged separately.
+_rt = pd.read_excel(INPUTS + 'flat_rate_2027.xlsx', sheet_name='Rates by Type')
+_t2r = _rf.groupby('Template')['Rate Type'].first().to_dict()
+_rt = _rt.set_index('Rate Type')
+FLAT, VAR_RATE, VAR_PER, VAR_AVG = {}, {}, {}, {}
+for _tpl, _rty in _t2r.items():
+    r = _rt.loc[_rty]
+    FLAT[_tpl] = round(float(r['Fixed Total / Mo']), 2)
+    if pd.notna(r['Variable Rate']):
+        VAR_RATE[_tpl] = float(r['Variable Rate']); VAR_PER[_tpl] = r['Variable Per']; VAR_AVG[_tpl] = float(r['Type Avg Monthly Use'])
+print('2027 rates', len(FLAT), 'types;', len(VAR_RATE), 'with a variable rate')
 
 # ---------- fees (registration, taxes, Geotab, Lytx; monthly) ----------
 fee_files = [A + '3f23cdde-Reg_Tax_Geo_LYTX.xlsx', A + '04beebbc-Current_Assets_Reg_Tax_Geo_Lytx.xlsx'] + ([INPUTS + 'fees.xlsx'] if os.path.exists(INPUTS + 'fees.xlsx') else [])
@@ -415,14 +429,14 @@ print('pool gal by pool', pool_gal.round().to_dict(), 'estimate', round(POOL_EST
 out = dict(generated='2026-10-30',
            locations=[dict(id=r['Store Number'], name=r['name'], district=r.district, kind=r.kind) for _, r in locs.iterrows()] + [NEW_LOC] + EXTRA_LOCS,
            districts=DORDER, assets=json.loads(df[cols].to_json(orient='records')) + planned,
-           flat=FLAT, fuelRate=FUEL27, lpRate=LP27, dcFuelRate=DC_FUEL, dcLpRate=DC_LP, mileRate=0.425,
+           flat=FLAT, varRate=VAR_RATE, varPer=VAR_PER, varAvg=VAR_AVG, fuelRate=FUEL27, lpRate=LP27, dcFuelRate=DC_FUEL, dcLpRate=DC_LP, mileRate=0.425,
            maintSeason=dict(company=season(ms)))
 # ---------- fuel = actual gallons by location, Nov 2025 - Oct 2026 (fuel card accounts + onsite tanks; user, Nov 4) ----------
 # Each location's trucks are scaled so its monthly gallons equal its row (fuel stays with the card account that bought it).
 # Tank rows go to 353 / 356 / 359 (359 includes 489). 068 is closed and dropped. Accounts with no fueled truck get a fuel-only line.
 # All gallons are priced at the blended 2027 rate.
 # stores and everyone else: 2027 blended rate; Distribution (353/356/359/489): 2027 diesel forecast prices (Julian, Nov 9)
-out['fuelRate'] = FUEL27[:]; out['dcFuelRate'] = DC_FUEL[:]; out['ratesVer'] = 'blended-stores-dc-diesel-2026-11-09'
+out['fuelRate'] = FUEL27[:]; out['dcFuelRate'] = DC_FUEL[:]; out['ratesVer'] = 'flat-2027-fixed-variable-2026-11-19'
 fl = pd.read_excel(INPUTS + 'fuel_by_location.xlsx', sheet_name='Gallons', header=2, dtype={'Location': str})
 fl = fl[fl['Source'].isin(['Fuel card', 'On-site tank'])].copy()
 fl['code'] = fl['Location'].str.extract(r'\((\d+)\)')[0].fillna(fl['Location']).str.strip()
@@ -506,6 +520,8 @@ _acc = {}
 for _n, _c in zip(_fa.iloc[:, 0], _fa.iloc[:, 1]):
     if str(_n).strip() in ('', 'nan'): continue
     _acc.setdefault(_key(_n), []).append(str(_c).strip())
+for _new, _old in (('fixed rate', 'flat rate'), ('variable rate', 'mileage charge')):
+    if _old in _acc: _acc.setdefault(_new, _acc[_old])
 _lv = pd.read_excel(INPUTS + 'adaptive_template.xlsx', sheet_name='Levels', dtype=str)
 _lvl = {}
 for _s, _c in zip(_lv.iloc[:, 0], _lv.iloc[:, 1]):
