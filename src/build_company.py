@@ -436,6 +436,20 @@ out = dict(generated='2026-10-30',
 # Tank rows go to 353 / 356 / 359 (359 includes 489). 068 is closed and dropped. Accounts with no fueled truck get a fuel-only line.
 # All gallons are priced at the blended 2027 rate.
 # stores and everyone else: 2027 blended rate; Distribution (353/356/359/489): 2027 diesel forecast prices (Julian, Nov 9)
+# ---------- average monthly hours by asset through Oct 31, 2026 (validated DVIR hours; Julian, Nov 19) ----------
+# Drives the 2027 per-hour variable rate for forklifts and TMFLs. Units without an average use the type average from the rate file.
+HRS = {}
+for _sh in ('Store Forklifts', 'Distribution Forklifts', 'TMFLs'):
+    _h = pd.read_excel(INPUTS + 'avg_monthly_hours_oct2026.xlsx', sheet_name=_sh, header=3, dtype={'Asset #': str})
+    _h = _h[_h['Asset #'].notna() & pd.to_numeric(_h['Avg Hrs / Month'], errors='coerce').notna()]
+    for _, r in _h.iterrows(): HRS[str(r['Asset #']).strip()] = round(float(r['Avg Hrs / Month']), 2)
+_nh = 0
+for _a in out['assets']:
+    _a['hrs'] = HRS.get(_a['id'])
+    if _a['type'] in VAR_PER and VAR_PER[_a['type']] == 'Hour' and _a['hrs'] is None and _a.get('status') not in ('Book only',):
+        _nh += 1
+        _a['flags'] = list(_a.get('flags') or []) + [f"No average hours in the Oct 2026 hours file; variable rate uses the {_a['type']} average ({VAR_AVG[_a['type']]:.1f} hrs/month)."]
+print('hours loaded', len(HRS), 'per-hour units without hours', _nh)
 out['fuelRate'] = FUEL27[:]; out['dcFuelRate'] = DC_FUEL[:]; out['ratesVer'] = 'flat-2027-fixed-variable-2026-11-19'
 fl = pd.read_excel(INPUTS + 'fuel_by_location.xlsx', sheet_name='Gallons', header=2, dtype={'Location': str})
 fl = fl[fl['Source'].isin(['Fuel card', 'On-site tank'])].copy()
