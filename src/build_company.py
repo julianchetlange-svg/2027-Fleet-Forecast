@@ -349,6 +349,11 @@ if _m.any():
     df.loc[_m, 'depSrc'] = 'Roster original value / 60'; df.loc[_m, 'cost'] = _c; df.loc[_m, 'costSrc'] = 'Original value (roster)'
     df.loc[_m, 'maint'] = round(float(df.loc[_t, 'maint'].median()), 2)
     df.loc[_m, 'flags'] = df.loc[_m, 'flags'].apply(lambda f: [x for x in f if 'awaiting input' not in x and 'No miles or fuel history' not in x] + ['Delivered Nov 18, 2026, replacing 747106 (lost an engine). Depreciation is original value / 60; maintenance is the median of Tractor TAs bought 2024 or later.'])
+# 747105 (24' Conveyor, 042) is on a $250/month holding rental, like 747104 (Julian, Nov 19)
+_m = df['id'] == '747105'
+if _m.any():
+    df.loc[_m, 'lease'] = 250.0
+    df.loc[_m, 'flags'] = df.loc[_m, 'flags'].apply(lambda f: list(f) + ['Lease: $250/month holding rental (Julian, Nov 19), same as 747104.'])
 # Units new on the Nov 18 roster and not in the fee file: registration, Geotab and Lytx are the median of same-type units within 2 years of age
 for _aid in [x for x in ADDED_FROM_BOOKS if x not in HASFEE and (df['id'] == x).any()]:
     _m = df['id'] == _aid; _ty = df.loc[_m, 'type'].iloc[0]
