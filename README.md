@@ -45,8 +45,7 @@ Jan–Sep 2026 actual depreciation (BA depreciation detail) ran $1.145M/month in
 
 - **Fixed:** $/month by asset type (base + ad valorem, registration, GPS, Lytx; trailers, reach trucks and scissor lifts include a flat maintenance amount).
 - **Variable:** $/mile for trucks, tractors, pickups and cars (each unit's own 2026 miles, including the mileage-change input); $/hour for forklifts and truck-mounted forklifts, using each unit's average monthly hours through Oct 31, 2026 (`inputs/avg_monthly_hours_oct2026.xlsx`, validated DVIR hours); units without readings use the type average.
-- **TMFLs and 4-way TMFLs (Nov 19):** complete flat rate of $1,276.49/month ($738.44 base + fees + $538.05 flat maintenance), no per-hour charge, because field hour-meter inputs are unreliable.
 - Loaners that sit at a store are billed to their pool (761–768) or 735, per the file's Billed To. The five department units stay at 530, 590 and 620.
 - Both rates are editable by type on the Assumptions tab. Saved browser scenarios reset to the new rates on first load.
 
-Location charges $37,008,812 (fixed $13.58M + variable $7.65M, +$1.06M vs the old rate; TMFLs on a complete flat rate; 14 TMFLs and 3 forklifts use service-visit hour readings instead of DVIR (TMFLs 244041, 247012, 245042, 244009, 244026, 246008, 245009, 243012, 243026, 247006, 246009, 245010, 245001, 244045; forklifts 383109, 383043, 382048) use hours at their last service ÷ months in service, against $17.02M flat + $3.16M mileage before); actual cost $36,248,725.
+Location charges $36,875,154 (fixed $12.20M + variable $8.90M, +$0.92M vs the old rate; 14 TMFLs and 3 forklifts use service-visit hour readings instead of DVIR (TMFLs 244041, 247012, 245042, 244009, 244026, 246008, 245009, 243012, 243026, 247006, 246009, 245010, 245001, 244045; forklifts 383109, 383043, 382048) use hours at their last service ÷ months in service, against $17.02M flat + $3.16M mileage before); actual cost $36,248,725.

@@ -121,11 +121,7 @@ for _tpl, _rty in _t2r.items():
     FLAT[_tpl] = round(float(r['Fixed Total / Mo']), 2)
     if pd.notna(r['Variable Rate']):
         VAR_RATE[_tpl] = float(r['Variable Rate']); VAR_PER[_tpl] = r['Variable Per']; VAR_AVG[_tpl] = float(r['Type Avg Monthly Use'])
-# TMFLs and 4-way TMFLs move to a complete flat rate: $738.44 base + fees + $538.05 flat maintenance = $1,276.49/month, no per-hour charge
-# (Julian, Nov 19: hour meter inputs from the field are unreliable)
-for _tpl in ('Truck Mounted Forklift', '4-Way Truck Mounted Forklift'):
-    FLAT[_tpl] = 1276.49
-    for _d in (VAR_RATE, VAR_PER, VAR_AVG): _d.pop(_tpl, None)
+# TMFLs stay on the per-hour variable rate (a complete flat rate was tried Nov 19 and reverted: it raised TMFL charges ~$134K)
 print('2027 rates', len(FLAT), 'types;', len(VAR_RATE), 'with a variable rate')
 
 # ---------- fees (registration, taxes, Geotab, Lytx; monthly) ----------
