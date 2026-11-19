@@ -121,6 +121,11 @@ for _tpl, _rty in _t2r.items():
     FLAT[_tpl] = round(float(r['Fixed Total / Mo']), 2)
     if pd.notna(r['Variable Rate']):
         VAR_RATE[_tpl] = float(r['Variable Rate']); VAR_PER[_tpl] = r['Variable Per']; VAR_AVG[_tpl] = float(r['Type Avg Monthly Use'])
+# TMFLs and 4-way TMFLs move to a complete flat rate: $738.44 base + fees + $538.05 flat maintenance = $1,276.49/month, no per-hour charge
+# (Julian, Nov 19: hour meter inputs from the field are unreliable)
+for _tpl in ('Truck Mounted Forklift', '4-Way Truck Mounted Forklift'):
+    FLAT[_tpl] = 1276.49
+    for _d in (VAR_RATE, VAR_PER, VAR_AVG): _d.pop(_tpl, None)
 print('2027 rates', len(FLAT), 'types;', len(VAR_RATE), 'with a variable rate')
 
 # ---------- fees (registration, taxes, Geotab, Lytx; monthly) ----------
@@ -453,7 +458,7 @@ for _k, (_di, _sd, _h) in SERVICE_HRS.items():
 _nh = 0
 for _a in out['assets']:
     _a['hrs'] = HRS.get(_a['id'])
-    if _a['id'] in SERVICE_HRS:
+    if _a['id'] in SERVICE_HRS and VAR_PER.get(_a['type']) == 'Hour':
         _di, _sd, _h = SERVICE_HRS[_a['id']]
         _a['flags'] = list(_a.get('flags') or []) + [f"Hours: DVIR readings were off; uses {_h:,} hrs at the {pd.Timestamp(_sd):%-m/%-d/%Y} service, {_a['hrs']:.1f} hrs/month."]
     if _a['type'] in VAR_PER and VAR_PER[_a['type']] == 'Hour' and _a['hrs'] is None and _a.get('status') not in ('Book only',):
