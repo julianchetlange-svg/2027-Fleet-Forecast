@@ -48,4 +48,4 @@ Jan–Sep 2026 actual depreciation (BA depreciation detail) ran $1.145M/month in
 - Loaners that sit at a store are billed to their pool (761–768) or 735, per the file's Billed To. The five department units stay at 530, 590 and 620.
 - Both rates are editable by type on the Assumptions tab. Saved browser scenarios reset to the new rates on first load.
 
-Location charges $36,864,289 (fixed $12.20M + variable $8.89M; eleven TMFLs use service-visit hour readings instead of DVIR (244041, 247012, 245042, 244009, 244026, 246008, 245009, 243012, 243026, 247006, 246009) use hours at their last service ÷ months in service, against $17.02M flat + $3.16M mileage before); actual cost $36,248,725.
+Location charges $36,866,925 (fixed $12.20M + variable $8.89M; fourteen TMFLs use service-visit hour readings instead of DVIR (244041, 247012, 245042, 244009, 244026, 246008, 245009, 243012, 243026, 247006, 246009, 245010, 245001, 244045) use hours at their last service ÷ months in service, against $17.02M flat + $3.16M mileage before); actual cost $36,248,725.
