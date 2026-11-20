@@ -241,6 +241,7 @@ tr.lrow.sub td:first-child{padding-left:44px}
 <!-- OVERVIEW -->
 <section class="view" id="v-overview">
   <div class="kpis" id="kpis"></div>
+  <div class="kpis" id="kpisFuel" style="margin-top:12px" aria-label="Fuel and other fleet expenses"></div>
   <div class="panel">
     <div class="callout">
       <div class="ch"><span class="eyebrow">Location charges</span><p><b>What each location is charged under the cost rules.</b> Stores, the regional loaner pools (761–768) and the HQ departments (730, 735, 510, 530, 590, 620, 705, 740) carry fuel plus the 2027 flat rate: a fixed monthly rate by asset type and a variable rate per mile (trucks, tractors, pickups and cars) or per hour (forklifts and truck-mounted forklifts). Loaners are billed to their pool (761–768) or 735. Distribution, Millwork, 355CD and 355 Reload carry actual cost: fuel, maintenance, depreciation, lease, registration & inspections, Geotab and Lytx (ad valorem tax is not a fleet expense). <b>450 Millwork and Distribution 353, 356, 359 and 489 are on straight P&amp;L</b>, so they show the same actual cost in both views.</p></div>
@@ -627,6 +628,20 @@ function renderOverview() {
   const rem = removalSummary(); const remAmt = rem.save + rem.out;
   k.append(kpi('', 'Actual cost change', `<span class="${dcls(dop)}">${sgnK(dop)}</span>`, Math.abs(dop) < 500 ? 'Moves shift charges; real spend is unchanged.' : `Removals ${sgnK(-remAmt)}; fuel and other shifts ${sgnK(dop + remAmt)}.`));
   if (rem.n) k.append(kpi('', 'Savings from removals', `<span class="${remAmt > 0.5 ? 'down' : ''}">${usdK(remAmt)}</span>`, `Terminated (${rem.nT}): ${usdK(rem.save)} company saving. Relocated out (${rem.nO}): ${usdK(rem.out)} leaves McCoy's plan.`));
+  // fuel shown apart from the other fleet expenses (Julian, Nov 20)
+  { const kf = document.getElementById('kpisFuel'); kf.innerHTML = '';
+    const isA = pt => !FLATK.has((LOC[pt.loc] || {}).kind);
+    const parts = (res, f) => totals(res, view0, f).byC;
+    const view0 = S.view, all = parts(SCEN), act = parts(SCEN, isA), allB = parts(BASE);
+    const sumc = (o, cs) => cs.reduce((t, c) => t + (o[c] || 0), 0);
+    const FUEL = ['Truck fuel', 'LD fuel'], LP = ['Forklift fuel'];
+    const cats = view0 === 'op' ? CATS_OP : CATS_CH, OTHER = cats.filter(c => !FUEL.includes(c) && !LP.includes(c));
+    const card = (eb, cs, note) => { const v = sumc(all, cs), a = sumc(act, cs), d = v - sumc(allB, cs);
+      kf.append(kpi('', eb, usdK(v), `Mfg/DC ${usdK(a)} · stores, pools &amp; HQ ${usdK(v - a)}` + (Math.abs(d) > 500 ? ` · <span class="${dcls(d)}">${sgnK(d)}</span> vs. baseline` : '') + (note ? `<br>${note}` : ''))); };
+    card('Fuel · truck & auto', FUEL, 'Diesel and gasoline on the 2027 price curve');
+    card('Fuel · forklift propane', LP, '');
+    card(view0 === 'op' ? 'Fleet expenses excluding fuel' : 'Charges excluding fuel', OTHER, view0 === 'op' ? 'Maintenance, rentals, registration &amp; inspections, depreciation, lease, Geotab and Lytx' : 'Fixed and variable rates at stores, pools and HQ; actual cost at Mfg/DC');
+  }
   document.getElementById('kpisR').innerHTML = k.innerHTML;
   const view = S.view; const B = view === 'op' ? bo : bc, Sx = view === 'op' ? so : sc;
   document.getElementById('monthLede').textContent = `${view === 'op' ? 'Actual cost' : 'Location charges'}: baseline ${usd(B.total)}, scenario ${usd(Sx.total)}. Fuel falls through the year as the 2027 rate drops from $${S.p.fuelRate[0].toFixed(2)} to $${S.p.fuelRate[11].toFixed(2)}.`;

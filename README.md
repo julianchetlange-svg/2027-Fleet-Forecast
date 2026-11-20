@@ -100,3 +100,7 @@ Stores, pools and HQ: fixed $11,888,457 + variable $8,900,867 = $20,789,324, aga
 ## Ad valorem removed from fleet expense (Nov 20)
 
 Accounting confirmed ad valorem (property) tax does not hit the fleet expense lines, so the dashboard no longer carries it at all (it had been its own line, already left out of the Adaptive export). Actual cost $37,307,922 ($27,706,855 without fuel: Mfg/DC $6,681,430, flat rate $21,025,425); location charges $37,071,821. The Adaptive import file is unchanged.
+
+## Fuel cards on the Overview (Nov 20)
+
+The Overview now shows fuel apart from the other fleet expenses, in whichever view is selected: truck & auto fuel ($8.80M), forklift propane ($799K), and everything excluding fuel ($27.71M actual cost; $27.47M in location charges), each split Mfg/DC vs stores, pools & HQ.
