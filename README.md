@@ -96,3 +96,7 @@ Maintenance, registration and rentals at each Mfg/DC level (353, 355CD, 355, 356
 Stores, pools and HQ: fixed $11,888,457 + variable $8,900,867 = $20,789,324, against $20,180,006 under the old rate (+$609K, +3.0%). Location charges $37,220,320; actual cost unchanged at $38,081,457.
 
 747104 (24' Conveyor, 355CD) truck lease held at its 2026 amount, $325 for 2027 (was $3,000). Actual cost $38,078,782; location charges $37,217,645.
+
+## Ad valorem removed from fleet expense (Nov 20)
+
+Accounting confirmed ad valorem (property) tax does not hit the fleet expense lines, so the dashboard no longer carries it at all (it had been its own line, already left out of the Adaptive export). Actual cost $37,307,922 ($27,706,855 without fuel: Mfg/DC $6,681,430, flat rate $21,025,425); location charges $37,071,821. The Adaptive import file is unchanged.
