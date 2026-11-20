@@ -69,3 +69,10 @@ The dashboard and the Adaptive export now carry the revised 2027 red-box lines a
 - Split of the red-box lines: Mfg/DC $4,364,071, flat rate $10,799,560.
 
 Totals: actual cost $38,081,457 ($28,480,390 without fuel); location charges $37,671,638 (the DCs and 355s carry the revision at actual cost).
+
+## Adaptive export fixes after accounting's DC variance check (Nov 20)
+
+- **Forklift maintenance** now goes to `6602_ForkliftRepairs_Tires`, where the 2026 history is. It had gone to Forklift Repair & Maintenance, which left accounting's existing Repairs & Tires amounts in place and counted forklift maintenance twice at the DC levels.
+- **Level names** for 356 and 450 now match Adaptive: "356 Midland - DC" and "450 Millwork - NB".
+- `accounting-review/Fleet_2027_MfgDC_by_Level_and_Account.xlsx`: 2027 annual by Mfg/DC level and account for 6602, 6610 and 6625.
+- Open with accounting: whether 2027 depreciation at the DC and Millwork levels should come from this export or from accounting's own depreciation budget.

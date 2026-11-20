@@ -591,6 +591,8 @@ for l in out['locations']:
     if l['id'] not in LEVEL: LEVEL[l['id']] = FLEET_LEVEL
     if l['id'] in ('510', '530', '620', '740'): l['name'] = LEVEL[l['id']].split(' ', 1)[1]
 CHG_KINDS = {'Store', 'Loaner pool', 'Headquarters', 'Fuel account'}
+# Adaptive level names for 356 and 450 as accounting's report shows them (Nov 20)
+LEVEL.update({'356': '356 Midland - DC', '450': '450 Millwork - NB'})
 out['adaptive'] = dict(accounts=_acc, levels=LEVEL, fleetLevel=FLEET_LEVEL,
                        fmt={l['id']: ('charge' if l['kind'] in CHG_KINDS else 'op') for l in out['locations']},
                        header=[str(c) for c in pd.read_excel(INPUTS + 'adaptive_template.xlsx', sheet_name='Adaptive Import', header=None, dtype=str).iloc[0]])
