@@ -76,3 +76,7 @@ Totals: actual cost $38,081,457 ($28,480,390 without fuel); location charges $37
 - **Level names** for 356 and 450 now match Adaptive: "356 Midland - DC" and "450 Millwork - NB".
 - `accounting-review/Fleet_2027_MfgDC_by_Level_and_Account.xlsx`: 2027 annual by Mfg/DC level and account for 6602, 6610 and 6625.
 - Open with accounting: whether 2027 depreciation at the DC and Millwork levels should come from this export or from accounting's own depreciation budget.
+
+## New-unit maintenance backfill (Nov 20)
+
+Units delivered since Oct 1, 2025 have less than a year in the Oct 2025–Sep 2026 repair window, so their history understated a full 2027 year (some were $0). 60 units are now budgeted at least the median maintenance of same-type units bought Jan 2024–Sep 2025, like the 2027 replacements (+$360,563 at unit level). The budget adjustments were regenerated, so the red-box total stays $15,163,631; the backfill changes where it lands (Mfg/DC $4,344,742). Location charges $37,652,309.

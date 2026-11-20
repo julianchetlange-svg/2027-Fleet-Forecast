@@ -354,6 +354,20 @@ _m = df['id'] == '747105'
 if _m.any():
     df.loc[_m, 'lease'] = 250.0
     df.loc[_m, 'flags'] = df.loc[_m, 'flags'].apply(lambda f: list(f) + ['Lease: $250/month holding rental (Julian, Nov 19), same as 747104.'])
+# Units delivered since Oct 1, 2025 have less than a full year in the Oct 2025-Sep 2026 repair window. Budget them at least the median
+# maintenance of same-type units bought Jan 2024-Sep 2025 (full history), like the 2027 replacements (Julian, Nov 20: no $0 maintenance for a full 2027 year).
+_isd = pd.to_datetime(df['isd']); _ref = (_isd >= '2024-01-01') & (_isd < '2025-10-01') & (df['maint'] > 0)
+NEW_MAINT = {}
+for _i in df.index[(_isd >= '2025-10-01') & (df['id'] != '758006')]:
+    _ty = df.at[_i, 'type']; _p = _ref & (df['type'] == _ty)
+    if _p.sum() < 3: _p = (df['type'] == _ty) & (df['maint'] > 0) & (_isd < '2025-10-01')
+    if not _p.any(): continue
+    _med = round(float(df.loc[_p, 'maint'].median()), 2)
+    if df.at[_i, 'maint'] < _med:
+        NEW_MAINT[df.at[_i, 'id']] = (df.at[_i, 'maint'], _med)
+        df.at[_i, 'maint'] = _med
+        df.at[_i, 'flags'] = list(df.at[_i, 'flags']) + [f"Maintenance: in service {pd.Timestamp(df.at[_i, 'isd']):%b %Y}, so under a year of repair history (${NEW_MAINT[df.at[_i, 'id']][0]:,.0f}); budgeted at the median of {_ty} units bought 2024 or later, ${_med:,.0f}/yr."]
+print('new-unit maintenance backfilled', len(NEW_MAINT), 'units, +$', round(sum(b - a for a, b in NEW_MAINT.values())))
 # Units new on the Nov 18 roster and not in the fee file: registration, Geotab and Lytx are the median of same-type units within 2 years of age
 for _aid in [x for x in ADDED_FROM_BOOKS if x not in HASFEE and (df['id'] == x).any()]:
     _m = df['id'] == _aid; _ty = df.loc[_m, 'type'].iloc[0]
