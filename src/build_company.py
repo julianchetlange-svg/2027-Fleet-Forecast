@@ -499,7 +499,7 @@ if os.path.exists(INPUTS + 'budget_adjustments_2027.csv'):
             adj={r.line: round(float(r.amount), 2) for _, r in _g.iterrows()},
             flags=['Budget adjustment to the revised 2027 estimate agreed with accounting (maintenance from the 2026 outlook less replacement savings; registration & inspections at the 2026 outlook; rentals from the Jan-Oct 2026 rental invoices). Actual expense only.']))
     print('budget adjustment lines', _ba['loc'].nunique(), 'locations; total', round(_ba.amount.sum()))
-out['fuelRate'] = FUEL27[:]; out['dcFuelRate'] = DC_FUEL[:]; out['ratesVer'] = 'flat-2027-fixed-variable-2026-11-19'
+out['fuelRate'] = FUEL27[:]; out['dcFuelRate'] = DC_FUEL[:]; out['ratesVer'] = 'flat-2027-fixed-variable-2026-11-20'
 fl = pd.read_excel(INPUTS + 'fuel_by_location.xlsx', sheet_name='Gallons', header=2, dtype={'Location': str})
 fl = fl[fl['Source'].isin(['Fuel card', 'On-site tank'])].copy()
 fl['code'] = fl['Location'].str.extract(r'\((\d+)\)')[0].fillna(fl['Location']).str.strip()

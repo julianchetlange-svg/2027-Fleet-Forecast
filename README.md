@@ -88,3 +88,9 @@ Maintenance, registration and rentals at each Mfg/DC level (353, 355CD, 355, 356
 - Red-box lines: $15,163,631 (Mfg/DC $4,227,270; flat rate $10,936,361).
 - Mfg/DC 6602/6610/6625 excluding depreciation: $4.27M vs $4.35M in 2026 (−1.9%). See the "2027 vs 2026" tab in `accounting-review/Fleet_2027_MfgDC_by_Level_and_Account.xlsx`.
 - Location charges $37,534,838; actual cost $38,081,457.
+
+## Revised 2027 flat rates (Nov 20)
+
+`inputs/flat_rate_2027.xlsx` replaced with the revised rate file: fixed base + fees lowered about 2.5–3.5% on 23 rate types (e.g. 24' TA Flatbed $1,992.89 → $1,943.49, 6K forklift $466.26 → $453.86, TMFL $738.44 → $717.78, Pickup $646.91 → $631.55). Variable rates, flat maintenance and billing locations unchanged.
+
+Stores, pools and HQ: fixed $11,888,457 + variable $8,900,867 = $20,789,324, against $20,180,006 under the old rate (+$609K, +3.0%). Location charges $37,220,320; actual cost unchanged at $38,081,457.
