@@ -72,3 +72,60 @@ for i, x in enumerate(R.sort_values(['level', 'acct']).itertuples(), 2):
 w3.column_dimensions['A'].width = 32; w3.column_dimensions['B'].width = 38; w3.freeze_panes = 'C2'
 wb.save('/mnt/user-data/outputs/Fleet_2027_MfgDC_by_Level_and_Account.xlsx')
 print(R[R.acct.isin(REQ)].groupby('level').tot.sum().round(), R[R.acct.isin(REQ)].tot.sum())
+
+# ---------- 2027 vs 2026 by level and account (accounting's DC variance check) ----------
+from openpyxl import load_workbook
+wb = load_workbook('/mnt/user-data/outputs/Fleet_2027_MfgDC_by_Level_and_Account.xlsx')
+a = pd.read_excel('company/inputs/dc_fy2026_by_level.xlsx', header=None, skiprows=2)
+a.columns = ['level', 'acctname', 'fy26', 'fy27', 'var', 'pct', 'chk']; a['level'] = a.level.replace('', None).ffill()
+NAME = {'Forklift Repair & Maintenance': '6602_ForkliftRepair_Maintenance', 'Forklift Repairs & Tires': '6602_ForkliftRepairs_Tires', 'Forklifts - 7 yr': '6602_Forklifts_7yr',
+        'Trailer Repair & Tires': '6602_TrailerRepair_Tires', 'Truck Repair & Maintenance': '6602_TruckRepair_Maintenance', 'Vehicle Heavy - > 13,000 - 5 yr': '6602_VehicleHeavy__13_000_5yr',
+        'Vehicle Light - < 13,000 - 5 yr': '6602_VehicleLight__13_000_5yr', 'Vehicle Registrations & Inspections': '6602_VehicleRegistrations_Inspections',
+        'Vehicle - 18 Wheeler - 5 yr': '6602_Vehicle_18Wheeler_5yr', 'Fleet Cameras': '6602_FleetCameras', 'Truck Rental': '6610_TruckRental', 'Forklift Rental': '6625_ForkliftRental',
+        'Truck Leasing Expense': '6602_TruckLeasingExpense', 'Auto Repair & Maintenance': '6602_AutoRepair_Maintenance'}
+a['acct'] = a.acctname.str.split(':').str[1].map(NAME)
+f26 = a.groupby(['level', 'acct']).fy26.sum()
+o27 = R[R.acct.isin(REQ)].groupby(['level', 'acct']).tot.sum()
+keys = sorted(set(f26.index) | set(o27.index))
+def note(l, ac, v26, v27):
+    if ac in ('6602_Forklifts_7yr', '6602_VehicleHeavy__13_000_5yr', '6602_VehicleLight__13_000_5yr', '6602_Vehicle_18Wheeler_5yr'):
+        return 'Depreciation: 2026 budget has none at this level. Open question: budget it here from this forecast, or where accounting budgets depreciation today.'
+    if ac == '6602_FleetCameras': return 'Intentional: DC and Millwork are straight P&L, so Lytx cameras hit the location starting 2027.'
+    if ac == '6602_ForkliftRepair_Maintenance': return 'Not used: all forklift maintenance is in Forklift Repairs & Tires. Clear any amount from the earlier upload.'
+    if ac == '6602_ForkliftRepairs_Tires': return 'All forklift maintenance (2026 amount, adjusted for units that moved between locations).'
+    if ac == '6625_ForkliftRental' and l.startswith('359'): return 'Burnet forklift rental ended: the rental unit was purchased.'
+    if l.startswith('479'): return 'No fleet units assigned to this level in the forecast; keep the amount accounting has.'
+    if ac.startswith(('6602_Truck', '6602_Trailer', '6602_Auto', '6610', '6625')) and abs(v27 - v26) > 1000:
+        return '2026 amount adjusted for units that moved between locations (e.g. 755031/755036 359 to 489, 377068/377069 489 to 359, 382004 356 to 359, 750027 355CD to 735).'
+    if abs(v27 - v26) <= 1000: return 'Same as 2026.'
+    return ''
+w4 = wb.create_sheet('2027 vs 2026', 0)
+w4['A1'] = "2027 vs 2026 by Manufacturing & Distribution level and account (6602, 6610, 6625)"; w4['A1'].font = Font(bold=True, size=13)
+w4['A2'] = "FY2026 from accounting's DC Vehicle Expense Check. FY2027 from the fleet forecast (Nov 20). Maintenance, registration and rentals at each level are the 2026 amount adjusted only for units that moved between locations; the 359 forklift rental is removed."
+hdr = ['Level', 'Account', 'FY2026', 'FY2027', '2027 v 2026 $', '2027 v 2026 %', 'Note']
+for j, h in enumerate(hdr, 1): c = w4.cell(4, j, h); c.font = H; c.fill = HF
+LVN = {'356 Midland - DC': '356 Midland - DC', '450 Millwork - NB': '450 Millwork - NB'}
+r = 5
+for (l, ac) in keys:
+    v26 = float(f26.get((l, ac), 0)); v27 = float(o27.get((l, ac), 0))
+    if not v26 and not v27: continue
+    w4.cell(r, 1, l); w4.cell(r, 2, ac)
+    c = w4.cell(r, 3, round(v26, 2)); c.number_format = money
+    c = w4.cell(r, 4, round(v27, 2)); c.number_format = money
+    c = w4.cell(r, 5, f'=D{r}-C{r}'); c.number_format = money
+    c = w4.cell(r, 6, f'=IF(C{r}=0,"",E{r}/C{r})'); c.number_format = '0.0%'
+    w4.cell(r, 7, note(l, ac, v26, v27)); r += 1
+w4.cell(r, 1, 'Total').font = B
+for j, col in ((3, 'C'), (4, 'D'), (5, 'E')):
+    c = w4.cell(r, j, f'=SUM({col}5:{col}{r-1})'); c.number_format = money; c.font = B; c.fill = TF
+c = w4.cell(r, 6, f'=IF(C{r}=0,"",E{r}/C{r})'); c.number_format = '0.0%'; c.font = B
+r += 1; w4.cell(r, 1, 'Total excluding depreciation').font = B
+dep = "{'6602_Forklifts_7yr','6602_VehicleHeavy__13_000_5yr','6602_VehicleLight__13_000_5yr','6602_Vehicle_18Wheeler_5yr'}"
+for j, col in ((3, 'C'), (4, 'D')):
+    f = '-'.join([f'SUMIF($B$5:$B${r-2},"{x}",{col}$5:{col}${r-2})' for x in ['6602_Forklifts_7yr', '6602_VehicleHeavy__13_000_5yr', '6602_VehicleLight__13_000_5yr', '6602_Vehicle_18Wheeler_5yr']])
+    c = w4.cell(r, j, f'={col}{r-1}-{f}'); c.number_format = money; c.font = B
+c = w4.cell(r, 5, f'=D{r}-C{r}'); c.number_format = money; c.font = B
+c = w4.cell(r, 6, f'=IF(C{r}=0,"",E{r}/C{r})'); c.number_format = '0.0%'; c.font = B
+for col, wd in zip('ABCDEFG', (30, 40, 14, 14, 15, 13, 110)): w4.column_dimensions[col].width = wd
+w4.freeze_panes = 'C5'
+wb.save('/mnt/user-data/outputs/Fleet_2027_MfgDC_by_Level_and_Account.xlsx')

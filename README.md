@@ -80,3 +80,11 @@ Totals: actual cost $38,081,457 ($28,480,390 without fuel); location charges $37
 ## New-unit maintenance backfill (Nov 20)
 
 Units delivered since Oct 1, 2025 have less than a year in the Oct 2025–Sep 2026 repair window, so their history understated a full 2027 year (some were $0). 60 units are now budgeted at least the median maintenance of same-type units bought Jan 2024–Sep 2025, like the 2027 replacements (+$360,563 at unit level). The budget adjustments were regenerated, so the red-box total stays $15,163,631; the backfill changes where it lands (Mfg/DC $4,344,742). Location charges $37,652,309.
+
+## Mfg/DC levels anchored to 2026 (Nov 20, option B)
+
+Maintenance, registration and rentals at each Mfg/DC level (353, 355CD, 355, 356, 359, 450, 489) are now the FY2026 amount from accounting's DC variance check (`inputs/dc_fy2026_by_level.xlsx`), adjusted only for units that moved between locations; the 359 forklift rental is removed (unit purchased). Units that left the fleet are not taken out, the same conservative treatment as the company total. This fixes 356 and 450 (GL costs with no unit attached that the repair invoices miss) and 359 (which had carried more than its share). The flat-rate side carries the rest of each agreed total.
+
+- Red-box lines: $15,163,631 (Mfg/DC $4,227,270; flat rate $10,936,361).
+- Mfg/DC 6602/6610/6625 excluding depreciation: $4.27M vs $4.35M in 2026 (−1.9%). See the "2027 vs 2026" tab in `accounting-review/Fleet_2027_MfgDC_by_Level_and_Account.xlsx`.
+- Location charges $37,534,838; actual cost $38,081,457.
