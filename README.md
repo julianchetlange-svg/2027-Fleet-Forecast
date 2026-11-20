@@ -94,3 +94,5 @@ Maintenance, registration and rentals at each Mfg/DC level (353, 355CD, 355, 356
 `inputs/flat_rate_2027.xlsx` replaced with the revised rate file: fixed base + fees lowered about 2.5–3.5% on 23 rate types (e.g. 24' TA Flatbed $1,992.89 → $1,943.49, 6K forklift $466.26 → $453.86, TMFL $738.44 → $717.78, Pickup $646.91 → $631.55). Variable rates, flat maintenance and billing locations unchanged.
 
 Stores, pools and HQ: fixed $11,888,457 + variable $8,900,867 = $20,789,324, against $20,180,006 under the old rate (+$609K, +3.0%). Location charges $37,220,320; actual cost unchanged at $38,081,457.
+
+747104 (24' Conveyor, 355CD) truck lease held at its 2026 amount, $325 for 2027 (was $3,000). Actual cost $38,078,782; location charges $37,217,645.

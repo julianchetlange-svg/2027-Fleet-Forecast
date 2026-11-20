@@ -349,6 +349,11 @@ if _m.any():
     df.loc[_m, 'depSrc'] = 'Roster original value / 60'; df.loc[_m, 'cost'] = _c; df.loc[_m, 'costSrc'] = 'Original value (roster)'
     df.loc[_m, 'maint'] = round(float(df.loc[_t, 'maint'].median()), 2)
     df.loc[_m, 'flags'] = df.loc[_m, 'flags'].apply(lambda f: [x for x in f if 'awaiting input' not in x and 'No miles or fuel history' not in x] + ['Delivered Nov 18, 2026, replacing 747106 (lost an engine). Depreciation is original value / 60; maintenance is the median of Tractor TAs bought 2024 or later.'])
+# 747104 (24' Conveyor, 355CD): 2027 truck lease held at the 2026 amount of $325 for the year (Julian, Nov 20)
+_m = df['id'] == '747104'
+if _m.any():
+    df.loc[_m, 'lease'] = 325 / 12
+    df.loc[_m, 'flags'] = df.loc[_m, 'flags'].apply(lambda f: list(f) + ['Lease: held at the 2026 amount, $325 for the year (Julian, Nov 20).'])
 # 747105 (24' Conveyor, 042) is on a $250/month holding rental, like 747104 (Julian, Nov 19)
 _m = df['id'] == '747105'
 if _m.any():
