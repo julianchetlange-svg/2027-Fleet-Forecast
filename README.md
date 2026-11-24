@@ -120,4 +120,4 @@ From `inputs/355CD_disband_2027.xlsx`:
 - **355CD depreciation-only lines** (755026 on risk hold, BAL-045506) move to 355 Pharr Reload. Proceeds for 747083 and 14214 book at 355.
 - **Budget:** 355CD carries nothing in 2027. P&L levels keep their 2026 amounts adjusted for units that moved or were replaced; the rest of the agreed $15,163,631 sits on the flat-rate side.
 
-Replacement capital $5,352,000 (−$272K); 2027 sale proceeds $774,878. Actual cost $37,216,410; location charges $36,926,012. Adaptive import: `accounting-review/Adaptive_Import_Fleet_2027_2026-11-24.xlsx` (no 355CD rows).
+Replacement capital $5,352,000 (−$272K); 2027 sale proceeds $779,378 (14214 trailer estimated at $4,500). 241009 is disposed and dropped from the replacement list. Actual cost $37,216,410; location charges $36,926,012. Adaptive import: `accounting-review/Adaptive_Import_Fleet_2027_2026-11-24.xlsx` (no 355CD rows).

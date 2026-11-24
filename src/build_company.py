@@ -669,6 +669,9 @@ out['repl'].append(dict(_o, id='752003', oem=_oem, year=_yr, status='Ordered (tr
 # 355CD depreciation-only lines go to 355 Pharr Reload
 for a in out['assets']:
     if a['loc'] == '355CD' and a['status'] == 'Book only': a['loc'] = '355'
+# 14214 (Flatbed Trailer): no trailer sales history; estimated sale price $4,500 (Julian, Nov 24)
+for x in out['repl']:
+    if x['id'] == '14214': x['px'] = [4500.0] * 12; x['basis'] = ['Estimate from Julian (no trailer sales history)'] * 12; x['note'] = ''
 print('355CD: moved', len(_moved), 'sold/returned', _sold, 'left at 355CD', [a['id'] for a in out['assets'] if a['loc'] == '355CD'])
 json.dump(out, open(OUT + 'data.json', 'w'), separators=(',', ':'))
 

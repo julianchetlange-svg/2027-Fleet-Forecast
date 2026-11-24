@@ -52,7 +52,7 @@ def build(csv, sales_path, assets, start_year=2027):
     M = {a['id']: a for a in assets}
     out, missing = [], []
     # pickups that will not be replaced in 2027 (Julian, Nov 12; "599179" taken as 594179, the only pickup on the list ending in 179)
-    NOT_REPLACED = {'599013', '599030', '594179'}
+    NOT_REPLACED = {'599013', '599030', '594179', '241009'}   # 241009 disposed (Julian, Nov 24)
     r = r[~r.Unit.isin(NOT_REPLACED)]
     for _, x in r.iterrows():
         a = M.get(x.Unit)
