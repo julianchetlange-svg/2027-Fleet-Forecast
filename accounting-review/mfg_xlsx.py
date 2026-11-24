@@ -88,6 +88,7 @@ f26 = a.groupby(['level', 'acct']).fy26.sum()
 o27 = R[R.acct.isin(REQ)].groupby(['level', 'acct']).tot.sum()
 keys = sorted(set(f26.index) | set(o27.index))
 def note(l, ac, v26, v27):
+    if l.startswith('355 Centralized'): return '355CD disbanded Jan 1, 2027: units moved to stores (flat rate), 355 Pharr Reload or 450, or were sold/returned. Clear this level for 2027.'
     if ac in ('6602_Forklifts_7yr', '6602_VehicleHeavy__13_000_5yr', '6602_VehicleLight__13_000_5yr', '6602_Vehicle_18Wheeler_5yr'):
         return 'Depreciation: 2026 budget has none at this level. Open question: budget it here from this forecast, or where accounting budgets depreciation today.'
     if ac == '6602_FleetCameras': return 'Intentional: DC and Millwork are straight P&L, so Lytx cameras hit the location starting 2027.'
@@ -101,7 +102,7 @@ def note(l, ac, v26, v27):
     return ''
 w4 = wb.create_sheet('2027 vs 2026', 0)
 w4['A1'] = "2027 vs 2026 by Manufacturing & Distribution level and account (6602, 6610, 6625)"; w4['A1'].font = Font(bold=True, size=13)
-w4['A2'] = "FY2026 from accounting's DC Vehicle Expense Check. FY2027 from the fleet forecast (Nov 20). Maintenance, registration and rentals at each level are the 2026 amount adjusted only for units that moved between locations; the 359 forklift rental is removed."
+w4['A2'] = "FY2026 from accounting's DC Vehicle Expense Check. FY2027 from the fleet forecast (Nov 24, with 355CD disbanded Jan 1, 2027). Maintenance, registration and rentals at each level are the 2026 amount adjusted only for units that moved between locations; the 359 forklift rental is removed."
 hdr = ['Level', 'Account', 'FY2026', 'FY2027', '2027 v 2026 $', '2027 v 2026 %', 'Note']
 for j, h in enumerate(hdr, 1): c = w4.cell(4, j, h); c.font = H; c.fill = HF
 LVN = {'356 Midland - DC': '356 Midland - DC', '450 Millwork - NB': '450 Millwork - NB'}

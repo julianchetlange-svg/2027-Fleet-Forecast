@@ -625,6 +625,51 @@ out['xfers'] = XFERS
 out['repl'], _miss, _s = _R.build(INPUTS + 'replacements_2027.csv', INPUTS + 'remarketing.xlsx', out['assets'])
 out['replMissing'] = _miss
 print('replacements', len(out['repl']), 'not on roster', _miss, 'sales used', len(_s))
+
+# ---------- 355CD disbanded January 1, 2027 (Julian, Nov 24; inputs/355CD_disband_2027.xlsx) ----------
+# Moves: units go to the listed location for all of 2027, carrying their miles, hours and fuel. At a store, pool or HQ they pay the
+# 2027 flat rate; at a P&L location (355 Pharr Reload, 450) their actual cost follows them.
+# Terminated: 380041 / 380043 (leased) are returned and their May 2027 replacements cancelled; 747083 and 14214 are sold in January.
+# "Replaces": the 355CD unit takes the old unit's place; the old unit is sold in January and any planned 2027 purchase for it is cancelled.
+# 747083's ordered replacement tractor goes to replace 752003 at 353 Dayton instead (January).
+_dx = pd.read_excel(INPUTS + '355CD_disband_2027.xlsx', dtype=str); _dx.columns = [c.strip() for c in _dx.columns]
+_AM = {a['id']: a for a in out['assets']}; _RM = {r['id']: r for r in out['repl']}
+_sales = _s; _moved, _sold = [], []
+def _sell_only(aid, note, loc=None):
+    a = _AM[aid]
+    if loc: a['loc'] = loc
+    r = _RM.get(aid)
+    oem = r['oem'] if r else str(a.get('make') or '').strip().title()
+    yr = r['year'] if r else pd.Timestamp(a['isd']).year
+    cat, cnote = _R.ROSTER_CAT.get(a['type'], (None, 'No sales category for this type'))
+    p, b = _R.price(_sales, cat, oem, 2027 + 0 / 12 - yr) if cat else (0.0, 'no sales category')
+    e = dict(id=aid, m=-1, cost=0.0, term=r['term'] if r else 60, fleet=r['fleet'] if r else a['cls'], oem=oem, year=yr, status=note,
+             measure=r['measure'] if r else '', threshold=r['threshold'] if r else '', lc=r['lc'] if r else '', newReg=0.0,
+             px=[round(p, 2)] * 12, basis=[b] * 12, note=cnote if not r else r['note'], leased=a['own'] != 'Owned', sellOnly=True)
+    out['repl'] = [x for x in out['repl'] if x['id'] != aid] + [e]; _sold.append((aid, note, round(p)))
+for _, r in _dx.iterrows():
+    aid = str(r['Asset']).strip(); to = str(r['Move to']).strip()
+    if aid not in _AM: print('355CD sheet: not in forecast', aid); continue
+    if to.lower().startswith('terminate'):
+        _sell_only(aid, 'Sold Jan 2027 (355CD disbanded)' if _AM[aid]['own'] == 'Owned' else 'Returned Jan 2027 (355CD disbanded)', loc='355' if _AM[aid]['loc'] == '355CD' and _AM[aid]['own'] == 'Owned' else None)
+    else:
+        dest = to.zfill(3) if to.isdigit() else to
+        frm = _AM[aid]['loc']; _AM[aid]['loc'] = dest; _moved.append((aid, frm, dest))
+        _AM[aid]['flags'] = list(_AM[aid].get('flags') or []) + [f"Moves {frm} to {dest} on Jan 1, 2027 (355CD disbanded); miles, hours and fuel carry over."]
+        old = str(r.get('Repalces') or r.get('Replaces') or '').strip()
+        if old and old.lower() != 'nan':
+            _sell_only(old, f'Sold Jan 2027: replaced by {aid} from 355CD')
+# 747083's tractor order moves to replace 752003 at 353 (January)
+_o = [x for x in _R.build(INPUTS + 'replacements_2027.csv', INPUTS + 'remarketing.xlsx', out['assets'])[0] if x['id'] == '747083'][0]
+_a = _AM['752003']; _cat = _R.ROSTER_CAT.get(_a['type'], (None, ''))[0]; _yr = pd.Timestamp(_a['isd']).year; _oem = str(_a['make']).title()
+_px, _bs = [], []
+for k in range(12):
+    p, b = _R.price(_sales, _cat, _oem, 2027 + (k + 1) / 12 - _yr); _px.append(round(p, 2)); _bs.append(b)
+out['repl'].append(dict(_o, id='752003', oem=_oem, year=_yr, status='Ordered (tractor moved from 747083)', measure='', threshold='', lc='', px=_px, basis=_bs, leased=False))
+# 355CD depreciation-only lines go to 355 Pharr Reload
+for a in out['assets']:
+    if a['loc'] == '355CD' and a['status'] == 'Book only': a['loc'] = '355'
+print('355CD: moved', len(_moved), 'sold/returned', _sold, 'left at 355CD', [a['id'] for a in out['assets'] if a['loc'] == '355CD'])
 json.dump(out, open(OUT + 'data.json', 'w'), separators=(',', ':'))
 
 # ---------- checks ----------

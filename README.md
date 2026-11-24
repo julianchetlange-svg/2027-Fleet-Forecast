@@ -108,3 +108,16 @@ The Overview now shows fuel apart from the other fleet expenses, in whichever vi
 ## Removed two wrap depreciation lines at 355CD (Nov 24)
 
 BA-050824 (rewrap of 693009) and BA-052051 (refurb and wrap of 750049) removed from the book-only depreciation lines (−$3,177 in 2027). 74 book-only lines remain ($242,918). Actual cost $37,304,745; location charges $37,068,644.
+
+## 355CD disbanded January 1, 2027 (Nov 24)
+
+From `inputs/355CD_disband_2027.xlsx`:
+
+- **26 units move** on Jan 1 with their miles, hours and fuel: to stores and pool 764 (2027 flat rate), to 355 Pharr Reload (384041, 384100, 599031, 747104, 750012; P&L, actual cost) and to 450 (599029; P&L). 699020 also moves 037 → 100.
+- **Returned / sold Jan 2027:** 380041 and 380043 (leased, returned; their May replacements cancelled); 747083 and 14214 (sold).
+- **Replaced by 355CD units and sold Jan 2027:** 241011 (by 242013 at 764), 379007 (by 382058 at 108), 599007 (by 599029 at 450), 694010 (by 626005 at 043). Planned purchases for 241011, 379007 and 599007 cancelled.
+- **747083's ordered tractor** now replaces 752003 at 353 (January).
+- **355CD depreciation-only lines** (755026 on risk hold, BAL-045506) move to 355 Pharr Reload. Proceeds for 747083 and 14214 book at 355.
+- **Budget:** 355CD carries nothing in 2027. P&L levels keep their 2026 amounts adjusted for units that moved or were replaced; the rest of the agreed $15,163,631 sits on the flat-rate side.
+
+Replacement capital $5,352,000 (−$272K); 2027 sale proceeds $774,878. Actual cost $37,216,410; location charges $36,926,012. Adaptive import: `accounting-review/Adaptive_Import_Fleet_2027_2026-11-24.xlsx` (no 355CD rows).

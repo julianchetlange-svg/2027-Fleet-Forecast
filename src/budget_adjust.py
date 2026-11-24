@@ -36,12 +36,19 @@ out_ = mv.groupby(['L', 'line'])['Subcontractor Invoice Total'].sum()
 in_ = {}
 for (L, nm), g in mv.groupby(['L', 'nm']):
     for ln, v in g.groupby('line')['Subcontractor Invoice Total'].sum().items(): in_[(cur(nm), ln)] = in_.get((cur(nm), ln), 0) + v
+# 355CD disband (Nov 24): units replaced by 355CD units leave their level (their invoices come out), and 355CD itself carries nothing
+_dx = pd.read_excel('inputs/355CD_disband_2027.xlsx', dtype=str); _dx.columns = [c.strip() for c in _dx.columns]
+_old = {str(x).strip() for x in _dx['Repalces'] if str(x).strip() not in ('', 'nan')}
+_ro = was[was.nm.isin(_old)].groupby(['L', 'line'])['Subcontractor Invoice Total'].sum()
+for k, v in _ro.items(): out_[k] = out_.get(k, 0) + v
+DISBANDED = {'355CD'}
 rows, dc_t = [], {}
 for L in DCS:
     for c in TARGET:
         t = float(FY.get((L, c), 0))
         if c.startswith('Maintenance'): t += -float(out_.get((L, c), 0)) + in_.get((L, c), 0)
         if L == '359' and c == 'Forklift rental': t = 0.0     # Burnet rental unit purchased
+        if L in DISBANDED: t = 0.0
         t = max(t, 0.0); dc_t[(L, c)] = t
         rows.append((L, c, t - B.get(L, {}).get(c, 0)))
 # flat-rate side
