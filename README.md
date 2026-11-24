@@ -104,3 +104,7 @@ Accounting confirmed ad valorem (property) tax does not hit the fleet expense li
 ## Fuel cards on the Overview (Nov 20)
 
 The Overview now shows fuel apart from the other fleet expenses, in whichever view is selected: truck & auto fuel ($8.80M), forklift propane ($799K), and everything excluding fuel ($27.71M actual cost; $27.47M in location charges), each split Mfg/DC vs stores, pools & HQ.
+
+## Removed two wrap depreciation lines at 355CD (Nov 24)
+
+BA-050824 (rewrap of 693009) and BA-052051 (refurb and wrap of 750049) removed from the book-only depreciation lines (−$3,177 in 2027). 74 book-only lines remain ($242,918). Actual cost $37,304,745; location charges $37,068,644.
